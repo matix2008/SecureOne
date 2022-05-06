@@ -13,11 +13,6 @@ using SecureOneLib.Utilities;
 
 namespace SecureOne
 {
-    //TODO: Добавить обработку опций: "Автоматически искать сертификат для проверки подписи"
-    //TODO: Добавить обработку опций: "Использовать только сертификаты контрагентов"
-    //TODO: Опция "Всегда использовать ГОСТ" не логична, т.к. криптография определяется сертификатом отправителя
-    //TODO: Добавить обработку опций: "Очищать список незащищенных файлов при очередной загрузке"
-    //TODO: Добавить обработку опций: "Путь к рабочему каталогу"
     public partial class OptionsForm : Form
     {
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
@@ -30,16 +25,19 @@ namespace SecureOne
         {
             InitializeComponent();
 
-            SenderCertificate = opt.SenderCertificate;
+            OwnerWorkingFolder = opt.OwnerWorkingFolder;
+            OwnerCertificate = opt.OwnerCertificate;
             RecipientsCertificatesCollection = opt.RecipientsCertificatesCollection;
-            AlwaysUseAttachedSign = opt.AlwaysUseAttachedSign;
-            AlwaysUseGost = opt.AlwaysUseGost;
+            AllwaysUseDetachedSign = opt.AllwaysUseDetachedSign;
+            AllwaysUseCustomEncFrmt = opt.AllwaysUseCustomEncFrmt;
+
         }
 
-        public CertificateWrapper SenderCertificate { get; protected set; }
+        public string OwnerWorkingFolder { get; protected set; }
+        public CertificateWrapper OwnerCertificate { get; protected set; }
         public CertificateCollectionWrapper RecipientsCertificatesCollection { get; protected set; }
-        public bool AlwaysUseAttachedSign { get; protected set; }
-        public bool AlwaysUseGost { get; protected set; }
+        public bool AllwaysUseDetachedSign { get; protected set; }
+        public bool AllwaysUseCustomEncFrmt { get; protected set; }
 
         private void OptionsForm_Load(object sender, EventArgs e)
         {
@@ -47,10 +45,12 @@ namespace SecureOne
             {
                 recipientsCertificatesListBox.Items.Clear();
 
-                alwaysUseAttachedSignCheckBox.Checked = AlwaysUseAttachedSign;
-                alwaysUseGostCheckBox.Checked = AlwaysUseGost;
+                
+                alwaysUseDetachedSignCheckBox.Checked = AllwaysUseDetachedSign;
+                alwaysUseCustomEncFrmtCheckBox.Checked = AllwaysUseCustomEncFrmt;
 
-                sendersCertificateTextBox.Text = SenderCertificate?.ToString() ?? "Выберите сертификат с закрытым ключом.";
+                ownerCertificateTextBox.Text = OwnerCertificate?.ToString() ?? "Выберите сертификат с закрытым ключом.";
+                workingFolderTextBox.Text = OwnerWorkingFolder.Length == 0 ? "Выберите рабочий каталог." : OwnerWorkingFolder;
 
                 if (RecipientsCertificatesCollection != null)
                 {
@@ -67,25 +67,36 @@ namespace SecureOne
                 MessageBox.Show($"Error: {ex.Message}");
             }
 
-            this.alwaysUseAttachedSignCheckBox.CheckedChanged += new System.EventHandler(this.options_CheckedChanged);
-            this.alwaysUseGostCheckBox.CheckedChanged += new System.EventHandler(this.options_CheckedChanged);
+            this.alwaysUseDetachedSignCheckBox.CheckedChanged += new System.EventHandler(this.options_CheckedChanged);
+        }
+
+
+        private void setupWorkingFolderButton_Click(object sender, EventArgs e)
+        {
+            // Открываем диалог выбора каталога
+            if (folderBrowserDialog.ShowDialog(this) == DialogResult.OK)
+            {
+                //TODO: Сохраняем настройку рабочего каталога
+                OwnerWorkingFolder = folderBrowserDialog.SelectedPath;
+                workingFolderTextBox.Text = OwnerWorkingFolder;
+            }
         }
 
         private void addSenderCertificateButton_Click(object sender, EventArgs e)
         {
             // Открываем форму для выбора одного сертификата
-            ChooseCertForm ccf = new ChooseCertForm(false);
+            ChooseCertForm ccf = new ChooseCertForm(null, true, false);
             if (ccf.ShowDialog() == DialogResult.OK)
             {
-                SenderCertificate = ccf.SelectedCertificates[0];
-                sendersCertificateTextBox.Text = SenderCertificate.ToString();
+                OwnerCertificate = ccf.SelectedCertificates[0];
+                ownerCertificateTextBox.Text = OwnerCertificate.ToString();
             }
         }
 
         private void addRecipientCertificateButton_Click(object sender, EventArgs e)
         {
             // Открываем форму для выбора списка сертификатов
-            ChooseCertForm ccf = new ChooseCertForm(true);
+            ChooseCertForm ccf = new ChooseCertForm(null, false, true);
             if (ccf.ShowDialog() == DialogResult.OK)
             {
                 var arr = ccf.SelectedCertificates.ToArray();
@@ -98,18 +109,23 @@ namespace SecureOne
 
         private void options_CheckedChanged(object sender, EventArgs e)
         {
-            AlwaysUseAttachedSign = alwaysUseAttachedSignCheckBox.Checked;
-            AlwaysUseGost = alwaysUseGostCheckBox.Checked;
+            AllwaysUseDetachedSign = alwaysUseDetachedSignCheckBox.Checked;
+            AllwaysUseCustomEncFrmt = alwaysUseCustomEncFrmtCheckBox.Checked;
         }
 
         private void clearButton_Click(object sender, EventArgs e)
         {
-            SenderCertificate = null;
+            OwnerWorkingFolder = "";
+            workingFolderTextBox.Text = "Выберите рабочий каталог.";
+
+            OwnerCertificate = null;
+            ownerCertificateTextBox.Text = "Выберите сертификат с закрытым ключом.";
+
             RecipientsCertificatesCollection = null;
-            sendersCertificateTextBox.Text = "Выберите сертификат с закрытым ключом.";
             recipientsCertificatesListBox.Items.Clear();
-            AlwaysUseAttachedSign = true;
-            AlwaysUseGost = true;
+
+            AllwaysUseDetachedSign = false;
+            AllwaysUseCustomEncFrmt = false;
         }
     }
 }

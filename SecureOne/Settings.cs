@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 using SecureOneLib;
 using SecureOneLib.Utilities;
 
 namespace SecureOne
 {
     /// <summary>
-    /// Набор установок приложения
+    /// Реализует набор системных настроект приложения
     /// </summary>
     public class Settings : IDisposable
     {
@@ -17,49 +18,38 @@ namespace SecureOne
 
         public Settings()
         {
+            // Загружаем данные найтроек из файла
             Load();
+
+            // Переустанавливаем некорректные найтроки
+            ResetIncorrectSettings();
         }
 
-        public CertificateWrapper SenderCertificate { get; set; }
+        public string OwnerWorkingFolder { get; set; }
+        public CertificateWrapper OwnerCertificate { get; set; }
         public CertificateCollectionWrapper RecipientsCertificatesCollection { get; set; }
-        public bool AlwaysUseAttachedSign { get; set; }
-        public bool AlwaysUseGost { get; set; }
-
-        public bool CheckRequiredFieldsAreFilled()
-        {
-            return (SenderCertificate != null);
-        }
-
-        public void Clear()
-        {
-            SenderCertificate = null;
-            RecipientsCertificatesCollection = null;
-            AlwaysUseAttachedSign = true;
-            AlwaysUseGost = true;
-        }
+        public bool AllwaysUseDetachedSign { get; set; }
+        public bool AllwaysUseCustomEncFrmt { get; set; }
 
         public void Reset()
         {
             Properties.Settings.Default.Reset();
             logger.Info("Aplication settings was reseted.");
+
             Load();
         }
 
         public void Load()
         {
-            SenderCertificate = null;
-            RecipientsCertificatesCollection = null;
-
             try
             {
-                AlwaysUseAttachedSign = Properties.Settings.Default.AlwaysUseAttachedSign;
-                AlwaysUseGost = Properties.Settings.Default.AlwaysUseGost;
+                logger.Info("Aplication settings are going to load.");
 
-                if (Properties.Settings.Default.SenderCertificate.Length != 0)
-                    SenderCertificate = CertificateWrapper.Parse(Properties.Settings.Default.SenderCertificate);
-
-                if (Properties.Settings.Default.RecipientsCertificatesCollection.Length != 0)
-                    RecipientsCertificatesCollection = new CertificateCollectionWrapper(Properties.Settings.Default.RecipientsCertificatesCollection);
+                OwnerWorkingFolder = Properties.Settings.Default.OwnerWorkingFolder;
+                AllwaysUseDetachedSign = Properties.Settings.Default.AllwaysUseDetachedSign;
+                AllwaysUseCustomEncFrmt = Properties.Settings.Default.AllwaysUseCustomEncFrmt;
+                OwnerCertificate = CertificateWrapper.Parse(Properties.Settings.Default.OwnerCertificate);
+                RecipientsCertificatesCollection = new CertificateCollectionWrapper(Properties.Settings.Default.RecipientsCertificatesCollection);
 
                 logger.Info("Aplication settings successfully loaded.");
             }
@@ -74,11 +64,11 @@ namespace SecureOne
         {
             try
             {
-                Properties.Settings.Default.AlwaysUseAttachedSign = AlwaysUseAttachedSign;
-                Properties.Settings.Default.AlwaysUseGost = AlwaysUseGost;
-                Properties.Settings.Default.SenderCertificate = SenderCertificate?.ToString() ?? string.Empty;
+                Properties.Settings.Default.OwnerWorkingFolder = OwnerWorkingFolder;
+                Properties.Settings.Default.AllwaysUseDetachedSign = AllwaysUseDetachedSign;
+                Properties.Settings.Default.AllwaysUseCustomEncFrmt = AllwaysUseCustomEncFrmt;
+                Properties.Settings.Default.OwnerCertificate = OwnerCertificate?.ToString() ?? string.Empty;
                 Properties.Settings.Default.RecipientsCertificatesCollection = RecipientsCertificatesCollection?.ToString() ?? string.Empty;
-                Properties.Settings.Default.AllRequiredFieldsAreFilled = CheckRequiredFieldsAreFilled();
 
                 logger.Info("Aplication settings successfully saved.");
             }
@@ -94,6 +84,43 @@ namespace SecureOne
         public void Dispose()
         {
             Load();
+        }
+
+        /// <summary>
+        /// Проверяет, что установлены обязательные параметры
+        /// </summary>
+        /// <returns></returns>
+        public bool CheckRequiredFieldsAreFilled()
+        {
+            return (OwnerCertificate != null &&
+                    OwnerWorkingFolder.Length > 0);
+        }
+
+        /// <summary>
+        /// Сбрасывает некорректные настройки в их значения по умолчанию
+        /// </summary>
+        protected void ResetIncorrectSettings()
+        {
+            logger.Info("Aplication settings are going to check for incorrect values.");
+
+            if (OwnerWorkingFolder.Length == 0 || !Directory.Exists(OwnerWorkingFolder))
+            {
+                OwnerWorkingFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                logger.Info($"Working folder was reset to default value: {OwnerWorkingFolder}");
+            }
+
+            if (OwnerCertificate != null)
+            {
+                if (!OwnerCertificate.Value.HasPrivateKey || !OwnerCertificate.Value.Verify())
+                {
+                    OwnerCertificate = null;
+                    logger.Info($"Owner's certificate was not passed verification and deleted.");
+                }
+            }
+
+            //TODO: Должна быть проверка действительности установленных сертификатов
+
+            logger.Info("All aplication settings was checked.");
         }
     }
 }

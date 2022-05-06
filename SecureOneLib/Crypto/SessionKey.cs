@@ -69,7 +69,6 @@ namespace SecureOneLib.Crypto
             inputStream.Read(buffer, 0, sizeof(Int32));
             int key_len = BitConverter.ToInt32(buffer, 0);
 
-
             byte[] key = new byte[key_len];
             inputStream.Read(key, 0, key_len);
 
@@ -93,6 +92,21 @@ namespace SecureOneLib.Crypto
             outputFileStream.CopyTo(sessionKeyStream);
             sessionKeyStream.Position = 0;
             return sessionKeyStream;
+        }
+
+        public static bool CheckForMagic(Stream inputStream)
+        {
+            if (inputStream == null)
+                throw new ArgumentNullException("outputStream");
+
+            byte[] magic = new byte[sizeof(UInt32)];
+            inputStream.Read(magic, 0, sizeof(UInt32));
+            inputStream.Position = 0;
+
+            if (BitConverter.ToUInt32(magic, 0) != _magic)
+                return false;
+
+            return true;
         }
     }
 }

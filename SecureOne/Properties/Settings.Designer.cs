@@ -26,12 +26,12 @@ namespace SecureOne.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string SenderCertificate {
+        public string OwnerCertificate {
             get {
-                return ((string)(this["SenderCertificate"]));
+                return ((string)(this["OwnerCertificate"]));
             }
             set {
-                this["SenderCertificate"] = value;
+                this["OwnerCertificate"] = value;
             }
         }
         
@@ -49,37 +49,37 @@ namespace SecureOne.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string OwnerWorkingFolder {
+            get {
+                return ((string)(this["OwnerWorkingFolder"]));
+            }
+            set {
+                this["OwnerWorkingFolder"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool AllRequiredFieldsAreFilled {
+        public bool AllwaysUseDetachedSign {
             get {
-                return ((bool)(this["AllRequiredFieldsAreFilled"]));
+                return ((bool)(this["AllwaysUseDetachedSign"]));
             }
             set {
-                this["AllRequiredFieldsAreFilled"] = value;
+                this["AllwaysUseDetachedSign"] = value;
             }
         }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
-        public bool AlwaysUseAttachedSign {
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool AllwaysUseCustomEncFrmt {
             get {
-                return ((bool)(this["AlwaysUseAttachedSign"]));
+                return ((bool)(this["AllwaysUseCustomEncFrmt"]));
             }
             set {
-                this["AlwaysUseAttachedSign"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
-        public bool AlwaysUseGost {
-            get {
-                return ((bool)(this["AlwaysUseGost"]));
-            }
-            set {
-                this["AlwaysUseGost"] = value;
+                this["AllwaysUseCustomEncFrmt"] = value;
             }
         }
     }

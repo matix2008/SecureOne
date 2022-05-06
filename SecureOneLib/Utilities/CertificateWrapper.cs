@@ -45,6 +45,9 @@ namespace SecureOneLib.Utilities
 
         public static CertificateWrapper Parse(string certstr)
         {
+            if (certstr.Length == 0)
+                return null;
+
             Regex rx = new Regex("CN:.+SN", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnoreCase);
             MatchCollection matches = rx.Matches(certstr);
             if (matches.Count != 1)
@@ -115,6 +118,7 @@ namespace SecureOneLib.Utilities
         public CertificateCollectionWrapper(X509Certificate2Collection coll)
         {
             Value = coll ?? throw new ArgumentNullException("cert");
+            Count = Value.Count;
         }
 
         public CertificateCollectionWrapper(CertificateWrapper[] arr)
@@ -126,6 +130,8 @@ namespace SecureOneLib.Utilities
 
             foreach (var cw in arr)
                 Value.Add(cw.Value);
+
+            Count = Value.Count;
         }
 
         public CertificateCollectionWrapper(string collstr)
@@ -137,12 +143,18 @@ namespace SecureOneLib.Utilities
                 cwl.Add(CertificateWrapper.Parse(s));
 
             Value = new X509Certificate2Collection(cwl.Select(x => x.Value).ToArray());
+            Count = Value.Count;
         }
 
         /// <summary>
         /// Коллекция сертификатов
         /// </summary>
         public X509Certificate2Collection Value { get; }
+
+        /// <summary>
+        /// Коллекция сертификатов
+        /// </summary>
+        public int Count { get; }
 
         /// <summary>
         /// Возвращает строку представляющую коллекцию

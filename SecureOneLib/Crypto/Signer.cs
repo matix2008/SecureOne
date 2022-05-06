@@ -88,40 +88,84 @@ namespace SecureOneLib.Crypto
             return coll;
         }
 
-        public static void Verify(byte[] sign, Stream dataStream, X509Certificate2 signerCert)
+        /// <summary>
+        /// Проверяет присоединенную подпись
+        /// </summary>
+        /// <param name="sign"></param>
+        /// <param name="data"></param>
+        public static void Verify(byte[] sign, bool verifySignatureOnly = false)
         {
-            byte[] hash;
-            AsymmetricAlgorithm privateKey = signerCert.GetPublicKeyAlgorithm();
-
-            if (signerCert.IsGost())
-            {
-                using (var hashAlg = (((GostAsymmetricAlgorithm)privateKey).CreateHashAlgorithm()))
-                {
-                    hash = hashAlg.ComputeHash(dataStream);
-                }
-            }
-            else
-            {
-                string str = privateKey.SignatureAlgorithm;
-
-                using (SHA256 hashalg = SHA256.Create())
-                {
-                    hash = hashalg.ComputeHash(dataStream);
-                }
-
-            }
-
-            ContentInfo contentInfo = new ContentInfo(hash);
-            SignedCms signedCms = new SignedCms(contentInfo, true);
-            signedCms.Decode(sign);
-            signedCms.CheckSignature(false);
-        }
-
-        public static void Verify(byte[] sign, X509Certificate2 signerCert)
-        {
+            // Create a new, nondetached SignedCms message.
             SignedCms signedCms = new SignedCms();
+
+            // encodedMessage is the encoded message received from
+            // the sender.
             signedCms.Decode(sign);
-            signedCms.CheckSignature(false);
+
+            // Verify the signature without validating the
+            // certificate.
+            signedCms.CheckSignature(verifySignatureOnly);
         }
+
+        /// <summary>
+        /// Проверяет отсоединенную подпись
+        /// </summary>
+        /// <param name="sign"></param>
+        /// <param name="data"></param>
+        public static void Verify(byte[] sign, byte[] data, bool verifySignatureOnly = false)
+        {
+            // Create a ContentInfo object from the inner content obtained
+            // independently from encodedMessage.
+            ContentInfo contentInfo = new ContentInfo(data);
+
+            // Create a new, detached SignedCms message.
+            SignedCms signedCms = new SignedCms(contentInfo, true);
+
+            // encodedMessage is the encoded message received from
+            // the sender.
+            signedCms.Decode(sign);
+
+            // Verify the signature without validating the
+            // certificate.
+            signedCms.CheckSignature(verifySignatureOnly);
+        }
+
+        ////TODO: Сертификат передавать неверно. Сертификат должен извлекаться из signedCms.SignerInfos
+        //// https://docs.microsoft.com/ru-ru/dotnet/api/system.security.cryptography.pkcs.signedcms.checksignature
+        //public static void Verify(byte[] sign, Stream dataStream, X509Certificate2 signerCert)
+        //{
+        //    byte[] hash;
+        //    AsymmetricAlgorithm privateKey = signerCert.GetPublicKeyAlgorithm();
+
+        //    if (signerCert.IsGost())
+        //    {
+        //        using (var hashAlg = (((GostAsymmetricAlgorithm)privateKey).CreateHashAlgorithm()))
+        //        {
+        //            hash = hashAlg.ComputeHash(dataStream);
+        //        }
+        //    }
+        //    else
+        //    {
+        //        string str = privateKey.SignatureAlgorithm;
+
+        //        using (SHA256 hashalg = SHA256.Create())
+        //        {
+        //            hash = hashalg.ComputeHash(dataStream);
+        //        }
+
+        //    }
+
+        //    ContentInfo contentInfo = new ContentInfo(hash);
+        //    SignedCms signedCms = new SignedCms(contentInfo, true);
+        //    signedCms.Decode(sign);
+        //    signedCms.CheckSignature(false);
+        //}
+
+        //public static void Verify(byte[] sign, X509Certificate2 signerCert)
+        //{
+        //    SignedCms signedCms = new SignedCms();
+        //    signedCms.Decode(sign);
+        //    signedCms.CheckSignature(false);
+        //}
     }
 }

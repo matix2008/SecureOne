@@ -9,7 +9,10 @@ namespace SecureOne
 {
     public partial class ChooseCertForm : Form
     {
-        public ChooseCertForm(bool multi)
+        CertificateCollectionWrapper _ccw = null;
+        bool _hasPrivateKeyOnly = false;
+
+        public ChooseCertForm(CertificateCollectionWrapper ccw, bool hasPrivateKeyOnly, bool multi)
         {
             InitializeComponent();
 
@@ -18,7 +21,10 @@ namespace SecureOne
             verifyButton.Enabled = false;
             OKButton.Enabled = false;
 
-            this.CertificatesListBox.SelectionMode = multi ? SelectionMode.MultiSimple : SelectionMode.One;
+            _ccw = ccw;
+            _hasPrivateKeyOnly = hasPrivateKeyOnly;
+
+            CertificatesListBox.SelectionMode = multi ? SelectionMode.MultiSimple : SelectionMode.One;
         }
 
         public List<CertificateWrapper> SelectedCertificates { get; protected set; }
@@ -76,19 +82,28 @@ namespace SecureOne
         {
             try
             {
-                X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
-                store.Open(OpenFlags.ReadWrite | OpenFlags.OpenExistingOnly);
+                X509Certificate2Collection fcollection = null;
 
-                X509Certificate2Collection fcollection = (X509Certificate2Collection)store.Certificates.
-                    Find(X509FindType.FindByTimeValid, DateTime.Now, false);
+                if (_ccw == null || _ccw.Count == 0)
+                {
+                    X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+                    store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
+
+                    fcollection = (X509Certificate2Collection)store.Certificates.
+                        Find(X509FindType.FindByTimeValid, DateTime.Now, false);
+
+                    store.Close();
+                }
+                else
+                {
+                    fcollection = _ccw.Value;
+                }
 
                 foreach (var cert in fcollection)
                 {
-                    if (cert.HasPrivateKey)
+                    if (!_hasPrivateKeyOnly || cert.HasPrivateKey)
                         CertificatesListBox.Items.Add(new CertificateWrapper(cert));
                 }
-
-                store.Close();
             }
             catch(Exception ex)
             {

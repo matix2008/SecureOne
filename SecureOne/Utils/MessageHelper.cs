@@ -9,6 +9,11 @@ namespace SecureOne.Utils
 {
     public static class MessageHelper
     {
+        public static DialogResult QuestionYN(Form owner, string message, string caption = "")
+        {
+            return MessageBox.Show(owner, message, caption.Length == 0 ? owner.Text : caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+        }
+
         public static void Info(Form owner, string message, string caption = "")
         {
             MessageBox.Show(owner, message, caption.Length == 0 ? owner.Text : caption, MessageBoxButtons.OK, MessageBoxIcon.Information);

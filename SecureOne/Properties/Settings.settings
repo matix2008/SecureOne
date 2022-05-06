@@ -2,20 +2,20 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="SecureOne.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
-    <Setting Name="SenderCertificate" Type="System.String" Scope="User">
+    <Setting Name="OwnerCertificate" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
     <Setting Name="RecipientsCertificatesCollection" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
-    <Setting Name="AllRequiredFieldsAreFilled" Type="System.Boolean" Scope="User">
+    <Setting Name="OwnerWorkingFolder" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="AllwaysUseDetachedSign" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
-    <Setting Name="AlwaysUseAttachedSign" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">True</Value>
-    </Setting>
-    <Setting Name="AlwaysUseGost" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">True</Value>
+    <Setting Name="AllwaysUseCustomEncFrmt" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
     </Setting>
   </Settings>
 </SettingsFile>

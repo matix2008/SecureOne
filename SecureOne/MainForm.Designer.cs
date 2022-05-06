@@ -34,6 +34,8 @@
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openFileDialog = new System.Windows.Forms.OpenFileDialog();
             this.plainDataListBox = new System.Windows.Forms.ListBox();
             this.encodedDataListBox = new System.Windows.Forms.ListBox();
@@ -44,8 +46,6 @@
             this.verifyDecryptButton = new System.Windows.Forms.Button();
             this.fileInfolistBox = new System.Windows.Forms.ListBox();
             this.statusStrip = new System.Windows.Forms.StatusStrip();
-            this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.mainMenuStrip.SuspendLayout();
             this.statusStrip.SuspendLayout();
@@ -77,20 +77,20 @@
             // 
             this.openToolStripMenuItem.Name = "openToolStripMenuItem";
             this.openToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.O)));
-            this.openToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.openToolStripMenuItem.Size = new System.Drawing.Size(173, 22);
             this.openToolStripMenuItem.Text = "Открыть...";
             this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
             // 
             // toolStripMenuItem1
             // 
             this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(177, 6);
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(170, 6);
             // 
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
             this.exitToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Q)));
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(173, 22);
             this.exitToolStripMenuItem.Text = "Выход";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
             // 
@@ -102,9 +102,25 @@
             this.optionsToolStripMenuItem.Text = "Настройки";
             this.optionsToolStripMenuItem.Click += new System.EventHandler(this.optionsToolStripMenuItem_Click);
             // 
+            // helpToolStripMenuItem
+            // 
+            this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.aboutToolStripMenuItem});
+            this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
+            this.helpToolStripMenuItem.Size = new System.Drawing.Size(68, 20);
+            this.helpToolStripMenuItem.Text = "Помощь";
+            // 
+            // aboutToolStripMenuItem
+            // 
+            this.aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
+            this.aboutToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.F1)));
+            this.aboutToolStripMenuItem.Size = new System.Drawing.Size(204, 22);
+            this.aboutToolStripMenuItem.Text = "О программе...";
+            this.aboutToolStripMenuItem.Click += new System.EventHandler(this.aboutToolStripMenuItem_Click);
+            // 
             // openFileDialog
             // 
-            this.openFileDialog.FileName = "Загрузка файлов";
+            this.openFileDialog.Title = "Загрузка файлов";
             // 
             // plainDataListBox
             // 
@@ -169,25 +185,28 @@
             this.encryptButton.TabIndex = 2;
             this.encryptButton.Text = "Зашифровать";
             this.encryptButton.UseVisualStyleBackColor = true;
+            this.encryptButton.Click += new System.EventHandler(this.encryptButton_Click);
             // 
             // verifyDecryptButton
             // 
             this.verifyDecryptButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.verifyDecryptButton.Location = new System.Drawing.Point(788, 584);
+            this.verifyDecryptButton.Location = new System.Drawing.Point(765, 584);
             this.verifyDecryptButton.Name = "verifyDecryptButton";
-            this.verifyDecryptButton.Size = new System.Drawing.Size(168, 23);
+            this.verifyDecryptButton.Size = new System.Drawing.Size(191, 23);
             this.verifyDecryptButton.TabIndex = 2;
-            this.verifyDecryptButton.Text = "Расшифровать";
+            this.verifyDecryptButton.Text = "Расшифровать / Проверить";
             this.verifyDecryptButton.UseVisualStyleBackColor = true;
+            this.verifyDecryptButton.Click += new System.EventHandler(this.verifyDecryptButton_Click);
             // 
             // fileInfolistBox
             // 
-            this.fileInfolistBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.fileInfolistBox.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.fileInfolistBox.BackColor = System.Drawing.SystemColors.Control;
             this.fileInfolistBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.fileInfolistBox.CausesValidation = false;
-            this.fileInfolistBox.ForeColor = System.Drawing.SystemColors.HotTrack;
+            this.fileInfolistBox.ForeColor = System.Drawing.Color.Blue;
             this.fileInfolistBox.FormattingEnabled = true;
             this.fileInfolistBox.Location = new System.Drawing.Point(972, 53);
             this.fileInfolistBox.Name = "fileInfolistBox";
@@ -206,21 +225,6 @@
             this.statusStrip.Size = new System.Drawing.Size(1214, 22);
             this.statusStrip.TabIndex = 5;
             this.statusStrip.Text = "statusStrip1";
-            // 
-            // helpToolStripMenuItem
-            // 
-            this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.aboutToolStripMenuItem});
-            this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
-            this.helpToolStripMenuItem.Size = new System.Drawing.Size(68, 20);
-            this.helpToolStripMenuItem.Text = "Помощь";
-            // 
-            // aboutToolStripMenuItem
-            // 
-            this.aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
-            this.aboutToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.F1)));
-            this.aboutToolStripMenuItem.Size = new System.Drawing.Size(204, 22);
-            this.aboutToolStripMenuItem.Text = "О программе...";
             // 
             // toolStripStatusLabel
             // 
@@ -248,6 +252,7 @@
             this.Name = "MainForm";
             this.Text = "SecureOne";
             this.Load += new System.EventHandler(this.MainForm_Load);
+            this.Shown += new System.EventHandler(this.MainForm_Shown);
             this.mainMenuStrip.ResumeLayout(false);
             this.mainMenuStrip.PerformLayout();
             this.statusStrip.ResumeLayout(false);
