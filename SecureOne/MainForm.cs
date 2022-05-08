@@ -86,7 +86,7 @@ namespace SecureOne
                     try
                     {
                         if (rx.IsMatch(ext))
-                            encodedDataListBox.Items.Add(new PackageWrapper(fn, _options.OwnerCertificate));
+                            encodedDataListBox.Items.Add(new PackageWrapper(fn));
                         else
                             plainDataListBox.Items.Add(new FileWrapper(fn));
                     }
@@ -174,9 +174,9 @@ namespace SecureOne
                     return;
                 }
 
-                FileWrapper fw = plainDataListBox.Items[plainDataListBox.SelectedIndex] as FileWrapper;
-                Sign(fw, _options.OwnerCertificate, _options.AllwaysUseDetachedSign);
-
+                FileWrapper ifw = plainDataListBox.Items[plainDataListBox.SelectedIndex] as FileWrapper;
+                PackageWrapper opw = Sign(ifw, _options.OwnerCertificate, _options.AllwaysUseDetachedSign);
+                AddPackages(opw);
             }
             catch (Exception ex)
             {
@@ -224,8 +224,9 @@ namespace SecureOne
                 }
 
                 FileWrapper fw = plainDataListBox.Items[plainDataListBox.SelectedIndex] as FileWrapper;
-                Encrypt(fw, recipientCert, _options.OwnerCertificate, 
+                PackageWrapper[] opwarr = Encrypt(fw, recipientCert, _options.OwnerCertificate, 
                     _options.AllwaysUseCustomEncFrmt);
+                AddPackages(opwarr);
             }
             catch (Exception ex)
             {
@@ -347,6 +348,18 @@ namespace SecureOne
             verifyDecryptButton.Enabled = false;
         }
 
+        private void AddPackages(PackageWrapper pw)
+        {
+            encodedDataListBox.Items.Add(pw);
+            verifyDecryptButton.Enabled = true;
+        }
+
+        private void AddPackages(PackageWrapper[] pwarr)
+        {
+            encodedDataListBox.Items.AddRange(pwarr);
+            verifyDecryptButton.Enabled = true;
+        }
+
         /// <summary>
         /// Шифрует файл на случайном симметричном ключе, зашированном в свою очередь на ассиметричном ключе сертификата. 
         /// Если указан сертификат подписанта, то формирует электронную подпись
@@ -358,17 +371,19 @@ namespace SecureOne
         /// file.ext.enc - шифрованные данные в формате SecureOne
         /// file.ext.sig - отсоединенная подпись в формате CMS / PKCS#7
         /// </remarks>
-        /// <param name="fw">Ссылка на обертку шифруемого файла</param>
+        /// <param name="ifw">Ссылка на обертку шифруемого файла</param>
         /// <param name="recipientCert">Ссылка на обертку для сертификата получателя</param>
         /// <param name="signerCert">Ссылка на обертку для сертификата подписывающего. Если null, подпись не формируется</param>
         /// <param name="cfrmt">Если true, функция всегда ширует файл в формате SecureOne. 
         /// Если false, функция пытается создать шифрованный CMS / PKCS7 контейнер, если памяти недостаточно шифрует в формате SecureOne.</param>
         [SecuritySafeCritical]
-        protected void Encrypt(FileWrapper fw, CertificateWrapper recipientCert, CertificateWrapper signerCert, bool cfrmt = false)
+        protected PackageWrapper[] Encrypt(FileWrapper ifw, CertificateWrapper recipientCert, CertificateWrapper signerCert, bool cfrmt = false)
         {
-            logger.Info($"Начинаем шифрование и подпись файла: {fw.FilePathString}");
+            logger.Info($"Начинаем шифрование и подпись файла: {ifw.FilePathString}");
 
-            using (FileStream ifs = File.OpenRead(fw.FilePathString))
+            List<PackageWrapper> opwlst = new List<PackageWrapper>();
+
+            using (FileStream ifs = File.OpenRead(ifw.FilePathString))
             {
                 try
                 {
@@ -391,13 +406,15 @@ namespace SecureOne
 
                         carr = Coder.SignEncrypt(buffer, recipientCert.Value, signerCert.Value);
 
-                        logger.Info($"Сохраняем шифрованные данные в файл: {fw.FilePathString + ".p7sm"}");
+                        logger.Info($"Сохраняем шифрованные данные в файл: {ifw.FilePathString + ".p7sm"}");
 
                         // Сохраняем шифрованные и подписанные данные в файл CMS / PKCS#7
-                        using (FileStream ofs = new FileStream(fw.FilePathString + ".p7sm", FileMode.CreateNew))
+                        using (FileStream ofs = new FileStream(ifw.FilePathString + ".p7sm", FileMode.CreateNew))
                         {
                             ofs.Write(carr, 0, carr.Length);
                         }
+
+                        opwlst.Add(new PackageWrapper(ifw.FilePathString + ".p7sm"));
                     }
                     else
                     {
@@ -405,12 +422,14 @@ namespace SecureOne
 
                         carr = Coder.Encrypt(buffer, recipientCert.Value);
 
-                        logger.Info($"Сохраняем шифрованные данные в файл: {fw.FilePathString + ".p7m"}");
+                        logger.Info($"Сохраняем шифрованные данные в файл: {ifw.FilePathString + ".p7m"}");
                         // Сохраняем шифрованные данные в файл CMS / PKCS#7
-                        using (FileStream ofs = new FileStream(fw.FilePathString + ".p7m", FileMode.CreateNew))
+                        using (FileStream ofs = new FileStream(ifw.FilePathString + ".p7m", FileMode.CreateNew))
                         {
                             ofs.Write(carr, 0, carr.Length);
                         }
+
+                        opwlst.Add(new PackageWrapper(ifw.FilePathString + ".p7m"));
                     }
                 }
                 catch (OutOfMemoryException)
@@ -418,18 +437,20 @@ namespace SecureOne
                     if (cfrmt)
                         logger.Info($"Шифруем в собственном формате");
                     else
-                        logger.Info($"Файл: {fw.FilePathString} слишком большой: {ifs.Length}. Шифруем в собственном формате");
+                        logger.Info($"Файл: {ifw.FilePathString} слишком большой: {ifs.Length}. Шифруем в собственном формате");
 
                     // Если пямяти нет шифруем в своем формате
                     Stream strm = Coder.Encrypt(ifs, recipientCert.Value);
 
-                    logger.Info($"Сохраняем шифрованные данные в файл: {fw.FilePathString + ".enc"}");
+                    logger.Info($"Сохраняем шифрованные данные в файл: {ifw.FilePathString + ".enc"}");
 
                     // Сохраняем шифрованные данные в файл
-                    using (FileStream ofs = new FileStream(fw.FilePathString + ".enc", FileMode.CreateNew))
+                    using (FileStream ofs = new FileStream(ifw.FilePathString + ".enc", FileMode.CreateNew))
                     {
                         strm.CopyTo(ofs);
                     }
+
+                    opwlst.Add(new PackageWrapper(ifw.FilePathString + ".enc"));
 
                     if (signerCert != null)
                     {
@@ -441,18 +462,21 @@ namespace SecureOne
                         // Формируем отсоединенную подпись
                         byte[] sign = Coder.SignDetached(ifs, signerCert.Value);
 
-                        logger.Info($"Сохраняем данные подписи в файл: {fw.FilePathString + ".sig"}");
+                        logger.Info($"Сохраняем данные подписи в файл: {ifw.FilePathString + ".sig"}");
 
                         // Сохраняем данные подписи в файл CMS / PKCS#7
-                        using (FileStream ofs = new FileStream(fw.FilePathString + ".sig", FileMode.CreateNew))
+                        using (FileStream ofs = new FileStream(ifw.FilePathString + ".sig", FileMode.CreateNew))
                         {
                             ofs.Write(sign, 0, sign.Length);
                         }
+
+                        opwlst.Add(new PackageWrapper(ifw.FilePathString + ".sig"));
                     }
                 }
             }
 
-            logger.Info($"Шифрование и подпись файла успешно завершены. Файл: {fw.FilePathString}");
+            logger.Info($"Шифрование и подпись файла успешно завершены. Файл: {ifw.FilePathString}");
+            return opwlst.ToArray();
         }
 
         /// <summary>
@@ -528,12 +552,12 @@ namespace SecureOne
         /// <param name="signerCert">Ссылка на обертку сертификата подписанта</param>
         /// <param name="forсeDetached">Если true - всегда создает отсоединенную подпись.</param>
         [SecuritySafeCritical]
-        protected void Sign(FileWrapper fw, CertificateWrapper signerCert, bool forсeDetached = false)
+        protected PackageWrapper Sign(FileWrapper ifw, CertificateWrapper signerCert, bool forсeDetached = false)
         {
-            logger.Info($"Начинаем подпись файла: {fw.FilePathString}");
+            logger.Info($"Начинаем подпись файла: {ifw.FilePathString}");
 
-            // Pf
-            using (FileStream ifs = File.OpenRead(fw.FilePathString))
+            PackageWrapper opw = null;
+            using (FileStream ifs = File.OpenRead(ifw.FilePathString))
             {
                 string ext = ".p7s";
                 byte[] sign = null;
@@ -562,16 +586,19 @@ namespace SecureOne
                     ext = ".sig";
                 }
 
-                logger.Info($"Сохраняем данные подписи в файл: {fw.FilePathString + ext}");
+                logger.Info($"Сохраняем данные подписи в файл: {ifw.FilePathString + ext}");
 
                 // Сохраняем данные подписи в файл CMS / PKCS#7
-                using (FileStream ofs = new FileStream(fw.FilePathString + ext, FileMode.CreateNew))
+                using (FileStream ofs = new FileStream(ifw.FilePathString + ext, FileMode.CreateNew))
                 {
                     ofs.Write(sign, 0, sign.Length);
                 }
+
+                opw = new PackageWrapper(ifw.FilePathString + ext);
             }
 
-            logger.Info($"Подпись файла: {fw.FilePathString} успешно завершена");
+            logger.Info($"Подпись файла: {ifw.FilePathString} успешно завершена");
+            return opw;
         }
 
         /// <summary>

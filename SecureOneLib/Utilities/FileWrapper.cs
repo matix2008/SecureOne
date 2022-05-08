@@ -93,7 +93,7 @@ namespace SecureOneLib.Utilities
         public enum PackageType { Unknown, ENC, SIG, P7S, P7M, P7SM };
         public enum SignStatus  { NotFound, UnknownDetached, Ok, Failed }
 
-        public PackageWrapper(string filepath, CertificateWrapper recipientCert)
+        public PackageWrapper(string filepath)
             : base(filepath)
         {
             Type = PackageType.Unknown;
