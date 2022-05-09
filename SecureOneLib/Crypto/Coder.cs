@@ -194,14 +194,12 @@ namespace SecureOneLib.Crypto
             if (recipientCert == null)
                 throw new ArgumentNullException("recipientCert");
 
-            MemoryStream encryptedDataStream = new MemoryStream();
             AsymmetricAlgorithm publicKey = recipientCert.GetPublicKeyAlgorithm();
 
             SymmetricAlgorithm senderSessionKey = null;
             AsymmetricKeyExchangeFormatter formatter = null;
 
             byte[] sessionKey;
-
             if (recipientCert.IsGost())
             {
                 // формируем случайный сессионный ключ
@@ -223,12 +221,20 @@ namespace SecureOneLib.Crypto
             // Отправитель передает получателю вектор инициализации
             SessionKey sk = new SessionKey(senderSessionKey.IV, sessionKey);
 
+            // создаем выходной поток
+            MemoryStream encryptedDataStream = new MemoryStream();
+
             // Отправитель шифрует данные с использованием сессионного ключа
             using (ICryptoTransform encryptor = senderSessionKey.CreateEncryptor())
             {
-                CryptoStream cryptoStream = new CryptoStream(encryptedDataStream, encryptor, CryptoStreamMode.Write);
+                //using (var encryptedFileStream = File.OpenWrite("..."))
+                //using (var encryptCryptoStream = new CryptoStream(encryptedFileStream, encryptor, CryptoStreamMode.Write))
+                //using (var inputFileStream = File.OpenRead("..."))
+                //    dataStream.CopyTo(encryptCryptoStream);
 
+                CryptoStream cryptoStream = new CryptoStream(encryptedDataStream, encryptor, CryptoStreamMode.Write);
                 dataStream.CopyTo(cryptoStream);
+
                 cryptoStream.FlushFinalBlock();
             }
 
@@ -247,9 +253,6 @@ namespace SecureOneLib.Crypto
             SessionKey sk = new SessionKey(encryptedDataStream);
             // устанавливаем "указатель" потока на начало шифрованных данных
             encryptedDataStream = sk.StreamTail;
-
-            // создаем выходной поток
-            MemoryStream decryptedDataStream = new MemoryStream();
 
             // Получаем закрытый ключ для расшифровки сессионного ключа
             AsymmetricAlgorithm privateKey = recipientCert.GetPrivateKeyAlgorithm();
@@ -272,6 +275,9 @@ namespace SecureOneLib.Crypto
 
             // Устанавливаем вектор инициализации
             receiverSessionKey.IV = sk.IV;
+
+            // создаем выходной поток
+            MemoryStream decryptedDataStream = new MemoryStream();
 
             // Рассшифровываем данные с использованием сессионного ключа
             using (ICryptoTransform decryptor = receiverSessionKey.CreateDecryptor())

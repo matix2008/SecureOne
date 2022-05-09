@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Security;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using GostCryptography;
 
@@ -103,16 +104,16 @@ namespace UnitTests
             s1.Position = 0;
             s2.Position = 0;
 
-            MemoryStream ms1 = new MemoryStream();
-            s1.CopyTo(ms1);
+            byte[] hash1 = null;
+            byte[] hash2 = null;
 
-            MemoryStream ms2 = new MemoryStream();
-            s2.CopyTo(ms2);
+            using (SHA1 sha1 = SHA1.Create())
+            {
+                hash1 = sha1.ComputeHash(s1);
+                hash2 = sha1.ComputeHash(s2);
+            }
 
-            var msArray1 = ms1.ToArray();
-            var msArray2 = ms2.ToArray();
-
-            return msArray1.SequenceEqual(msArray2);
+            return hash1.SequenceEqual(hash2);
         }
     }
 }

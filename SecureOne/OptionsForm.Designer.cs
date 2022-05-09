@@ -184,6 +184,7 @@
             this.alwaysUseCustomEncFrmtCheckBox.TabIndex = 5;
             this.alwaysUseCustomEncFrmtCheckBox.Text = "Всегда использовать собственный формат шифрования";
             this.alwaysUseCustomEncFrmtCheckBox.UseVisualStyleBackColor = true;
+            this.alwaysUseCustomEncFrmtCheckBox.CheckedChanged += new System.EventHandler(this.options_CheckedChanged);
             // 
             // OptionsForm
             // 

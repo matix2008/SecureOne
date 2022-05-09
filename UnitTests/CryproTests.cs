@@ -49,11 +49,77 @@ namespace UnitTests
         }
 
         [TestMethod]
+        public void EncryptDecryptStreams_ValidCerts_gostbig()
+        {
+            var cert = TestConfig.GostPKCert;
+
+            Stream input = TestConfig.BigFile;
+            input.Position = 0;
+
+            {
+                Stream encrypted = Coder.Encrypt(input, cert);
+
+                string enctempfile = TestConfig.GetTempFileName();
+                using (FileStream ofs1 = File.Create(enctempfile))
+                {
+                    encrypted.CopyTo(ofs1);
+                }
+
+                Stream decrypted = null;
+                using (FileStream ifs = File.OpenRead(enctempfile))
+                {
+                    decrypted = Coder.Decrypt(ifs, cert);
+
+                    string dectempfile = TestConfig.GetTempFileName();
+                    using (FileStream ofs2 = File.Create(dectempfile))
+                    {
+                        decrypted.CopyTo(ofs2);
+                    }
+                }
+
+                Assert.IsTrue(TestConfig.CompareStreams(input, decrypted));
+            }
+        }
+
+        [TestMethod]
         public void EncryptDecryptStreams_ValidCerts_nogostsmall()
         {
             var cert = TestConfig.NoGostPKCert;
 
             Stream input = TestConfig.SmallFile;
+            input.Position = 0;
+
+            {
+                Stream encrypted = Coder.Encrypt(input, cert);
+
+                string enctempfile = TestConfig.GetTempFileName();
+                using (FileStream ofs1 = File.Create(enctempfile))
+                {
+                    encrypted.CopyTo(ofs1);
+                }
+
+                Stream decrypted = null;
+                using (FileStream ifs = File.OpenRead(enctempfile))
+                {
+                    decrypted = Coder.Decrypt(ifs, cert);
+
+                    string dectempfile = TestConfig.GetTempFileName();
+                    using (FileStream ofs2 = File.Create(dectempfile))
+                    {
+                        decrypted.CopyTo(ofs2);
+                    }
+                }
+
+                Assert.IsTrue(TestConfig.CompareStreams(input, decrypted));
+            }
+        }
+
+        [TestMethod]
+        public void EncryptDecryptStreams_ValidCerts_nogostbig()
+        {
+            var cert = TestConfig.NoGostPKCert;
+
+            Stream input = TestConfig.BigFile;
             input.Position = 0;
 
             {

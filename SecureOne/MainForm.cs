@@ -128,11 +128,7 @@ namespace SecureOne
             {
                 if (e.KeyCode == Keys.Delete)
                 {
-                    encodedDataListBox.Items.RemoveAt(plainDataListBox.SelectedIndex);
-                }
-                else if (e.KeyCode == Keys.Enter)
-                {
-
+                    encodedDataListBox.Items.RemoveAt(encodedDataListBox.SelectedIndex);
                 }
             }
         }
@@ -249,6 +245,12 @@ namespace SecureOne
                     pw.Type == PackageWrapper.PackageType.P7M ||
                     pw.Type == PackageWrapper.PackageType.P7SM)
                 {
+                    if (_options.OwnerCertificate == null)
+                    {
+                        Utils.MessageHelper.Warning(this, "Сертификат собственника не указан. Расшифровка невозможна.");
+                        return;
+                    }
+
                     // проверяем подпись (если есть), расшифровываем и сохраняем расшифрованные данные
                     Decrypt(pw, ofn, _options.OwnerCertificate);
 
@@ -309,6 +311,7 @@ namespace SecureOne
                 {
                     _options.OwnerWorkingFolder = oform.OwnerWorkingFolder;
                     _options.AllwaysUseDetachedSign = oform.AllwaysUseDetachedSign;
+                    _options.AllwaysUseCustomEncFrmt = oform.AllwaysUseCustomEncFrmt;
                     _options.OwnerCertificate = oform.OwnerCertificate;
                     _options.RecipientsCertificatesCollection = oform.RecipientsCertificatesCollection;
 
@@ -387,6 +390,9 @@ namespace SecureOne
             {
                 try
                 {
+                    // очищаем память
+                    GC.Collect();
+
                     // Если мы должны использовать собственный формат или размер данных потока больше или равно 2 ^ 32
                     if (cfrmt || ifs.Length > Int32.MaxValue)
                         throw new OutOfMemoryException();   // генерируем исключение
@@ -432,46 +438,52 @@ namespace SecureOne
                         opwlst.Add(new PackageWrapper(ifw.FilePathString + ".p7m"));
                     }
                 }
-                catch (OutOfMemoryException)
+                catch (Exception ex)
                 {
-                    if (cfrmt)
-                        logger.Info($"Шифруем в собственном формате");
-                    else
-                        logger.Info($"Файл: {ifw.FilePathString} слишком большой: {ifs.Length}. Шифруем в собственном формате");
-
-                    // Если пямяти нет шифруем в своем формате
-                    Stream strm = Coder.Encrypt(ifs, recipientCert.Value);
-
-                    logger.Info($"Сохраняем шифрованные данные в файл: {ifw.FilePathString + ".enc"}");
-
-                    // Сохраняем шифрованные данные в файл
-                    using (FileStream ofs = new FileStream(ifw.FilePathString + ".enc", FileMode.CreateNew))
+                    if (ex is OutOfMemoryException ||
+                        (ex is System.Security.Cryptography.CryptographicException && ((uint)ex.HResult) == 0x80093106))
                     {
-                        strm.CopyTo(ofs);
-                    }
 
-                    opwlst.Add(new PackageWrapper(ifw.FilePathString + ".enc"));
+                        if (cfrmt)
+                            logger.Info($"Шифруем в собственном формате");
+                        else
+                            logger.Info($"Файл: {ifw.FilePathString} слишком большой: {ifs.Length}. Шифруем в собственном формате");
 
-                    if (signerCert != null)
-                    {
-                        logger.Info("Указан сертификат владельца - формируем отсоединенную подпись");
+                        // Если пямяти нет шифруем в своем формате
+                        Stream strm = Coder.Encrypt(ifs, recipientCert.Value);
 
-                        // Восстанавливаем позицию потока в начало
-                        ifs.Position = 0;
+                        logger.Info($"Сохраняем шифрованные данные в файл: {ifw.FilePathString + ".enc"}");
 
-                        // Формируем отсоединенную подпись
-                        byte[] sign = Coder.SignDetached(ifs, signerCert.Value);
-
-                        logger.Info($"Сохраняем данные подписи в файл: {ifw.FilePathString + ".sig"}");
-
-                        // Сохраняем данные подписи в файл CMS / PKCS#7
-                        using (FileStream ofs = new FileStream(ifw.FilePathString + ".sig", FileMode.CreateNew))
+                        // Сохраняем шифрованные данные в файл
+                        using (FileStream ofs = new FileStream(ifw.FilePathString + ".enc", FileMode.CreateNew))
                         {
-                            ofs.Write(sign, 0, sign.Length);
+                            strm.CopyTo(ofs);
                         }
 
-                        opwlst.Add(new PackageWrapper(ifw.FilePathString + ".sig"));
+                        opwlst.Add(new PackageWrapper(ifw.FilePathString + ".enc"));
+
+                        if (signerCert != null)
+                        {
+                            logger.Info("Указан сертификат владельца - формируем отсоединенную подпись");
+
+                            // Восстанавливаем позицию потока в начало
+                            ifs.Position = 0;
+
+                            // Формируем отсоединенную подпись
+                            byte[] sign = Coder.SignDetached(ifs, signerCert.Value);
+
+                            logger.Info($"Сохраняем данные подписи в файл: {ifw.FilePathString + ".sig"}");
+
+                            // Сохраняем данные подписи в файл CMS / PKCS#7
+                            using (FileStream ofs = new FileStream(ifw.FilePathString + ".sig", FileMode.CreateNew))
+                            {
+                                ofs.Write(sign, 0, sign.Length);
+                            }
+
+                            opwlst.Add(new PackageWrapper(ifw.FilePathString + ".sig"));
+                        }
                     }
+                    else throw;
                 }
             }
 
@@ -564,6 +576,9 @@ namespace SecureOne
 
                 try
                 {
+                    // очищаем память
+                    GC.Collect();
+
                     // Если мы должны сформировать присоединенную подпись или размер данных потока больше или равно 2 ^ 32
                     if (forсeDetached || ifs.Length > Int32.MaxValue)
                         throw new OutOfMemoryException();   // генерируем исключение
@@ -577,13 +592,18 @@ namespace SecureOne
 
                     sign = Coder.SignAttached(buffer, signerCert.Value);
                 }
-                catch(OutOfMemoryException)
+                catch(Exception ex)
                 {
-                    logger.Info($"Формируем отсоединенную подпись");
+                    if (ex is OutOfMemoryException || 
+                        (ex is System.Security.Cryptography.CryptographicException && ((uint)ex.HResult) == 0x80093106))
+                    {
+                        logger.Info($"Формируем отсоединенную подпись");
 
-                    // Если мы тут формируем отсоединенную подпись
-                    sign = Coder.SignDetached(ifs, signerCert.Value);
-                    ext = ".sig";
+                        // Если мы тут формируем отсоединенную подпись
+                        sign = Coder.SignDetached(ifs, signerCert.Value);
+                        ext = ".sig";
+                    }
+                    else throw;
                 }
 
                 logger.Info($"Сохраняем данные подписи в файл: {ifw.FilePathString + ext}");
