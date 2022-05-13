@@ -13,12 +13,18 @@ namespace UnitTests
 {
     static class TestConfig
     {
+        public const long _minFileSize = 1024;                  // 1 Кб
+        public const long _maxSmallFileSize = 1024 * 100;       // 100 Кб
+        public const long _mimBigFileSize = 1024 * 1024 * 100;  // 100 Мб
+        public const long _maxFileSize = 1024 * 1024 * 800;     // 800 Мб
+
         public const StoreName DefaultStoreName = StoreName.My;
         public const StoreLocation DefaultStoreLocation = StoreLocation.CurrentUser;
 
         static TestConfig()
         {
-            DefaultFileRootLocation = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            //DefaultFileRootLocation = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            DefaultFileRootLocation = @"d:\temp";
 
             GostPKCert = FindCertificate(DefaultStoreName, DefaultStoreLocation, filter: c => (c.IsGost() && c.HasPrivateKey));
             GostPKCert2 = FindCertificate(DefaultStoreName, DefaultStoreLocation, filter: c => (c.IsGost() && c.HasPrivateKey && (GostPKCert == null || !c.SerialNumber.Equals(GostPKCert.SerialNumber))));
@@ -28,8 +34,8 @@ namespace UnitTests
             NoGostPKCert2 = FindCertificate(DefaultStoreName, DefaultStoreLocation, filter: c => (!c.IsGost() && c.HasPrivateKey && (NoGostPKCert == null || !c.SerialNumber.Equals(NoGostPKCert.SerialNumber))));
             NoGostPubKCert = FindCertificate(DefaultStoreName, DefaultStoreLocation, filter: c => (!c.IsGost() && !c.HasPrivateKey));
 
-            BigFile = FindFile(DefaultFileRootLocation, "*.*", filter: f => f.Length > 104857600); // больше 100 Мб
-            SmallFile = FindFile(DefaultFileRootLocation, "*.*", filter: f => f.Length < 102400);  // меньше 100 Кб
+            BigFile = FindFile(DefaultFileRootLocation, "*.*", filter: f => (f.Length >= _mimBigFileSize && f.Length < _maxFileSize)); // больше 100 и меньше 800 Мб
+            SmallFile = FindFile(DefaultFileRootLocation, "*.*", filter: f => (f.Length >= _minFileSize && f.Length <= _maxSmallFileSize));  // больше 1 и меньше 100 Кб
         }
 
         public static string DefaultFileRootLocation { get; }

@@ -187,12 +187,16 @@ namespace SecureOneLib.Crypto
             signedCms.CheckSignature(verifySignatureOnly);
         }
 
-        public static Stream Encrypt(Stream dataStream, X509Certificate2 recipientCert)
+        public static void Encrypt(Stream dataStream, FileStream encryptedFileStream, X509Certificate2 recipientCert)
         {
             if (dataStream == null)
                 throw new ArgumentNullException("dataStream");
+            if (encryptedFileStream == null)
+                throw new ArgumentNullException("encryptedFileStream");
             if (recipientCert == null)
                 throw new ArgumentNullException("recipientCert");
+            if (!encryptedFileStream.CanWrite)
+                throw new ArgumentException("Can't write to encryptedFileStream");
 
             AsymmetricAlgorithm publicKey = recipientCert.GetPublicKeyAlgorithm();
 
@@ -213,46 +217,169 @@ namespace SecureOneLib.Crypto
             {
                 // формируем случайный сессионный ключ
                 senderSessionKey = Aes.Create();
+                senderSessionKey.Padding = PaddingMode.PKCS7;
                 // Отправитель шифрует сессионный ключ на открытом ключе и передает его получателю
                 formatter = new RSAPKCS1KeyExchangeFormatter(publicKey);
                 sessionKey = formatter.CreateKeyExchange(senderSessionKey.Key);
             }
 
             // Отправитель передает получателю вектор инициализации
-            SessionKey sk = new SessionKey(senderSessionKey.IV, sessionKey);
-
-            // создаем выходной поток
-            MemoryStream encryptedDataStream = new MemoryStream();
+            //SessionKey sk = new SessionKey(senderSessionKey.IV, sessionKey);
 
             // Отправитель шифрует данные с использованием сессионного ключа
             using (ICryptoTransform encryptor = senderSessionKey.CreateEncryptor())
             {
-                //using (var encryptedFileStream = File.OpenWrite("..."))
-                //using (var encryptCryptoStream = new CryptoStream(encryptedFileStream, encryptor, CryptoStreamMode.Write))
-                //using (var inputFileStream = File.OpenRead("..."))
-                //    dataStream.CopyTo(encryptCryptoStream);
+                /*
+                 * Заголовок:
+                 * Волшебное слово (2 байта) - 0xABBA
+                 * Длинна синхропосылки (4 байта)
+                 * Синхропосылка (senderSessionKey.IV.Length)
+                 * Длинна шифрованного ключа (4 байта)
+                 * Шифрованный сессионный ключ (senderSessionKey.Key.Length)
+                 */
 
-                CryptoStream cryptoStream = new CryptoStream(encryptedDataStream, encryptor, CryptoStreamMode.Write);
-                dataStream.CopyTo(cryptoStream);
+                var offset = sizeof(UInt16) +
+                    sizeof(Int32) + senderSessionKey.IV.Length +
+                    sizeof(Int32) + sessionKey.Length;
 
-                cryptoStream.FlushFinalBlock();
+                // Резервируем место для заголовка
+                encryptedFileStream.SetLength(offset);
+                encryptedFileStream.Position = offset;
+
+                // Создаем криптографический поток
+                using (var encryptCryptoStream = new CryptoStream(encryptedFileStream, encryptor, CryptoStreamMode.Write))
+                {
+                    // Шируем
+                    dataStream.CopyTo(encryptCryptoStream);
+                    // Сохраняем позицию !!!
+                    long oldpos = encryptedFileStream.Position;
+
+                    // Дописываем в начало потока заголовок, данные ключа и синхропосылки
+                    encryptedFileStream.Position = 0;
+
+                    // "волшебное" слово
+                    byte[] magic = BitConverter.GetBytes((UInt16)0xABBA);
+                    encryptedFileStream.Write(magic, 0, magic.Length);
+                    // длина сихропосылки
+                    byte[] iv_len = BitConverter.GetBytes((Int32)senderSessionKey.IV.Length);
+                    encryptedFileStream.Write(iv_len, 0, iv_len.Length);
+                    // синхропосыка
+                    encryptedFileStream.Write(senderSessionKey.IV, 0, senderSessionKey.IV.Length);
+                    // длина шифрованного сессионного ключа
+                    byte[] key_len = BitConverter.GetBytes((Int32)sessionKey.Length);
+                    encryptedFileStream.Write(key_len, 0, key_len.Length);
+                    // шифрованный сессионный ключ
+                    encryptedFileStream.Write(sessionKey, 0, sessionKey.Length);
+
+                    // Восстанавливаем позицию!!!
+                    encryptedFileStream.Position = oldpos;
+
+                    // Обновляем базовый источник данных
+                    encryptCryptoStream.FlushFinalBlock();
+                }
             }
-
-            encryptedDataStream.Position = 0;
-            return sk.CopyTo(encryptedDataStream);
         }
 
-        public static Stream Decrypt(Stream encryptedDataStream, X509Certificate2 recipientCert)
+        public static void EncryptEx(Stream dataStream, FileStream encryptedFileStream, X509Certificate2 recipientCert, out byte[] IV, out byte[] CKey)
+        {
+            if (dataStream == null)
+                throw new ArgumentNullException("dataStream");
+            if (encryptedFileStream == null)
+                throw new ArgumentNullException("encryptedFileStream");
+            if (recipientCert == null)
+                throw new ArgumentNullException("recipientCert");
+            if (!encryptedFileStream.CanWrite)
+                throw new ArgumentException("Can't write to encryptedFileStream");
+
+            AsymmetricAlgorithm publicKey = recipientCert.GetPublicKeyAlgorithm();
+
+            SymmetricAlgorithm senderSessionKey = null;
+            AsymmetricKeyExchangeFormatter formatter = null;
+
+            if (recipientCert.IsGost())
+            {
+                // формируем случайный сессионный ключ
+                senderSessionKey = new Gost_28147_89_SymmetricAlgorithm(((GostAsymmetricAlgorithm)publicKey).ProviderType);
+
+                // Отправитель шифрует сессионный ключ на открытом ключе и передает его получателю
+                formatter = ((GostAsymmetricAlgorithm)publicKey).CreateKeyExchangeFormatter();
+                CKey = ((GostKeyExchangeFormatter)formatter).CreateKeyExchangeData(senderSessionKey);
+            }
+            else
+            {
+                // формируем случайный сессионный ключ
+                senderSessionKey = Aes.Create();
+                senderSessionKey.Padding = PaddingMode.PKCS7;
+                // Отправитель шифрует сессионный ключ на открытом ключе и передает его получателю
+                formatter = new RSAPKCS1KeyExchangeFormatter(publicKey);
+                CKey = formatter.CreateKeyExchange(senderSessionKey.Key);
+            }
+
+            IV = senderSessionKey.IV;
+
+            // Отправитель шифрует данные с использованием сессионного ключа
+            using (ICryptoTransform encryptor = senderSessionKey.CreateEncryptor())
+            {
+                // Создаем криптографический поток
+                using (var encryptCryptoStream = new CryptoStream(encryptedFileStream, encryptor, CryptoStreamMode.Write))
+                {
+                    // Шируем
+                    dataStream.CopyTo(encryptCryptoStream);
+                    encryptCryptoStream.FlushFinalBlock();
+                }
+            }
+        }
+
+        public static void Decrypt(Stream encryptedDataStream, FileStream dataFileStream, X509Certificate2 recipientCert)
         {
             if (encryptedDataStream == null)
                 throw new ArgumentNullException("encryptedDataStream");
+            if (dataFileStream == null)
+                throw new ArgumentNullException("dataFileStream");
             if (recipientCert == null)
                 throw new ArgumentNullException("recipientCert");
+            if (!dataFileStream.CanWrite)
+                throw new ArgumentException("Can't write to dataFileStream");
+
+            /*
+             * Заголовок:
+             * Волшебное слово (2 байта) - 0xABBA
+             * Длинна синхропосылки (4 байта)
+             * Синхропосылка (senderSessionKey.IV.Length)
+             * Длинна шифрованного ключа (4 байта)
+             * Шифрованный сессионный ключ (senderSessionKey.Key.Length)
+             */
 
             // Извлекаем из потока синхропосылку и зашифрованный сессионный ключ
-            SessionKey sk = new SessionKey(encryptedDataStream);
-            // устанавливаем "указатель" потока на начало шифрованных данных
-            encryptedDataStream = sk.StreamTail;
+            encryptedDataStream.Position = 0;
+
+            // буффер для "волшебного" слова
+            byte[] _magic = new byte[sizeof(UInt16)];
+            // заполняем буфер из потока
+            encryptedDataStream.Read(_magic, 0, sizeof(UInt16));
+            // сравниваем
+            if (BitConverter.ToUInt16(_magic, 0) != 0xABBA)
+                throw new SOInvalidFormatException("Invalid stream format. Unknown magic value.");
+            
+            // буфер для длины синхропосылки или шифрованного сессионного ключа
+            byte[] _len = new byte[sizeof(Int32)];
+            // читаем из потока длину синхропосылки
+            encryptedDataStream.Read(_len, 0, sizeof(Int32));
+
+            int len = BitConverter.ToInt32(_len, 0);
+            // буффер для синхропосылки
+            byte[] _IV = new byte[len];
+            // читаем из потока синхропосылку
+            encryptedDataStream.Read(_IV, 0, len);
+
+            // читаем из потока длину шифрованного сессионного ключа
+            encryptedDataStream.Read(_len, 0, sizeof(Int32));
+            len = BitConverter.ToInt32(_len, 0);
+
+            // буффер для шифрованного сессионного ключа
+            byte[] _KEY = new byte[len];
+            // читаем из потока шифрованный сессионный ключ
+            encryptedDataStream.Read(_KEY, 0, len);
 
             // Получаем закрытый ключ для расшифровки сессионного ключа
             AsymmetricAlgorithm privateKey = recipientCert.GetPrivateKeyAlgorithm();
@@ -263,33 +390,74 @@ namespace SecureOneLib.Crypto
             {
                 deformatter = ((GostAsymmetricAlgorithm)privateKey).CreateKeyExchangeDeformatter();
                 // Рассшифровываем сессионный ключ и устанавливаем его в качестве ключа симметричного алгоритма
-                receiverSessionKey = ((GostKeyExchangeDeformatter)deformatter).DecryptKeyExchangeAlgorithm(sk.Key);
+                receiverSessionKey = ((GostKeyExchangeDeformatter)deformatter).DecryptKeyExchangeAlgorithm(_KEY);
             }
             else
             {
                 deformatter = new RSAPKCS1KeyExchangeDeformatter(privateKey);
                 receiverSessionKey = Aes.Create();
+                receiverSessionKey.Padding = PaddingMode.PKCS7;
                 // Рассшифровываем сессионный ключ и устанавливаем его в качестве ключа симметричного алгоритма
-                receiverSessionKey.Key = deformatter.DecryptKeyExchange(sk.Key);
+                receiverSessionKey.Key = deformatter.DecryptKeyExchange(_KEY);
             }
 
             // Устанавливаем вектор инициализации
-            receiverSessionKey.IV = sk.IV;
-
-            // создаем выходной поток
-            MemoryStream decryptedDataStream = new MemoryStream();
+            receiverSessionKey.IV = _IV;
 
             // Рассшифровываем данные с использованием сессионного ключа
             using (ICryptoTransform decryptor = receiverSessionKey.CreateDecryptor())
             {
                 CryptoStream cryptoStream = new CryptoStream(encryptedDataStream, decryptor, CryptoStreamMode.Read);
-                cryptoStream.CopyTo(decryptedDataStream);
+                cryptoStream.CopyTo(dataFileStream);
+            }
+        }
+
+        public static void DecryptEx(Stream encryptedDataStream, FileStream dataFileStream, X509Certificate2 recipientCert, byte[] IV, byte[] CKey)
+        {
+            if (encryptedDataStream == null)
+                throw new ArgumentNullException("encryptedDataStream");
+            if (dataFileStream == null)
+                throw new ArgumentNullException("dataFileStream");
+            if (recipientCert == null)
+                throw new ArgumentNullException("recipientCert");
+            if (!dataFileStream.CanWrite)
+                throw new ArgumentException("Can't write to dataFileStream");
+            if (IV == null)
+                throw new ArgumentNullException("IV");
+            if (CKey == null)
+                throw new ArgumentNullException("CKey");
+
+            // Получаем закрытый ключ для расшифровки сессионного ключа
+            AsymmetricAlgorithm privateKey = recipientCert.GetPrivateKeyAlgorithm();
+            AsymmetricKeyExchangeDeformatter deformatter = null;
+            SymmetricAlgorithm receiverSessionKey = null;
+
+            if (recipientCert.IsGost())
+            {
+                deformatter = ((GostAsymmetricAlgorithm)privateKey).CreateKeyExchangeDeformatter();
+                // Рассшифровываем сессионный ключ и устанавливаем его в качестве ключа симметричного алгоритма
+                receiverSessionKey = ((GostKeyExchangeDeformatter)deformatter).DecryptKeyExchangeAlgorithm(CKey);
+            }
+            else
+            {
+                deformatter = new RSAPKCS1KeyExchangeDeformatter(privateKey);
+                receiverSessionKey = Aes.Create();
+                receiverSessionKey.Padding = PaddingMode.PKCS7;
+                // Рассшифровываем сессионный ключ и устанавливаем его в качестве ключа симметричного алгоритма
+                receiverSessionKey.Key = deformatter.DecryptKeyExchange(CKey);
             }
 
-            decryptedDataStream.Position = 0;
-            return decryptedDataStream;
+            // Устанавливаем вектор инициализации
+            receiverSessionKey.IV = IV;
+
+            // Рассшифровываем данные с использованием сессионного ключа
+            using (ICryptoTransform decryptor = receiverSessionKey.CreateDecryptor())
+            {
+                CryptoStream cryptoStream = new CryptoStream(encryptedDataStream, decryptor, CryptoStreamMode.Read);
+                cryptoStream.CopyTo(dataFileStream);
+            }
         }
-    
+
         /// <summary>
         /// Шифрует даннные по стандарту PKCS7 / CMS на открытом ключе получателя
         /// Объем данных должен быть ограничен  (менее ~50 Мб в зависимости от кол-ва оперативной памяти)

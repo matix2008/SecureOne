@@ -443,23 +443,22 @@ namespace SecureOne
                     if (ex is OutOfMemoryException ||
                         (ex is System.Security.Cryptography.CryptographicException && ((uint)ex.HResult) == 0x80093106))
                     {
+                        // Шифруем в своем формате
 
                         if (cfrmt)
                             logger.Info($"Шифруем в собственном формате");
                         else
                             logger.Info($"Файл: {ifw.FilePathString} слишком большой: {ifs.Length}. Шифруем в собственном формате");
 
-                        // Если пямяти нет шифруем в своем формате
-                        Stream strm = Coder.Encrypt(ifs, recipientCert.Value);
-
-                        logger.Info($"Сохраняем шифрованные данные в файл: {ifw.FilePathString + ".enc"}");
-
                         // Сохраняем шифрованные данные в файл
                         using (FileStream ofs = new FileStream(ifw.FilePathString + ".enc", FileMode.CreateNew))
                         {
-                            strm.CopyTo(ofs);
+                            logger.Info($"Шифруем и сохраняем шифрованные данные в файл: {ifw.FilePathString + ".enc"}");
+
+                            Coder.Encrypt(ifs, ofs, recipientCert.Value);
                         }
 
+                        // Добавляем шифрованный файл в список
                         opwlst.Add(new PackageWrapper(ifw.FilePathString + ".enc"));
 
                         if (signerCert != null)
@@ -518,13 +517,9 @@ namespace SecureOne
                     // Если мы тут, значит это шифрованный файл собственного формата
                     using (FileStream ifs = File.OpenRead(pw.FilePathString))
                     {
-                        logger.Info($"Рассшифровываем данные файла: {pw.FilePathString}");
-                        // Расшифровываем его
-                        Stream strm = Coder.Decrypt(ifs, recipientCert.Value);
-
-                        logger.Info($"Сохраняем расшифрованные данные в файл: {ofpath}");
-                        // Сохраняем расшифрованные данные в файл
-                        strm.CopyTo(ofs);
+                        logger.Info($"Рассшифровываем и сохраняем данные в файл: {ofpath}");
+                        // Расшифровываем его и сохраняем расшифрованные данные в файл
+                        Coder.Decrypt(ifs, ofs, recipientCert.Value);
                     }
                 }
                 else
