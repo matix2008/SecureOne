@@ -15,23 +15,29 @@ namespace SecureOne
 {
     public class BackgroundCryptoWorker : BackgroundWorker
     {
+        // типы поддерживаемых операций
         public enum AsyncCryptoOpration { Unknown, Sign, SignEncrypt, Verify, Decrypt, VerifyEncode, CheckSettigs };
 
+        // ссылка на логер
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
-        protected Form _owner;
+        protected Form _owner;                                  // форма владелец
 
-        protected object _lockObj = new object();
+        protected object _lockObj = new object();               // объект синхронизации
 
-        protected AsyncCryptoOpration _asyncCryptoOpration;
-        protected FileWrapper _inputFileWrapper;
-        protected string _fileName;
-        protected CertificateWrapper _signerCertificate;
-        protected CertificateWrapper _recipientCertificate;
-        protected bool _forсeDetachedSign;
-        protected bool _customEncryptionFormat;
-        protected Settings _settings;
+        protected AsyncCryptoOpration _asyncCryptoOpration;     // тип асинхронной операции
+        protected FileWrapper _inputFileWrapper;                // входной файл
+        protected string _fileName;                             // дополнительное имя файла
+        protected CertificateWrapper _signerCertificate;        // сертификат владельца
+        protected CertificateWrapper _recipientCertificate;     // сертификат контрагента
+        protected bool _forсeDetachedSign;                      // флаг отсоединенной подписи
+        protected bool _customEncryptionFormat;                 // флаг собственного формата
+        protected Settings _settings;                           // ссылка на настройки
 
+        /// <summary>
+        /// Конструирует объект для асинхронных операций
+        /// </summary>
+        /// <param name="owner"></param>
         public BackgroundCryptoWorker(Form owner)
         {
             _owner = owner;
@@ -50,6 +56,9 @@ namespace SecureOne
             this.DoWork += BackgroundCryptoWorker_DoWork;
         }
 
+        /// <summary>
+        /// Возвращает тип операции
+        /// </summary>
         public AsyncCryptoOpration Operation
         {
             get
@@ -61,6 +70,9 @@ namespace SecureOne
             }
         }
 
+        /// <summary>
+        /// Начинает асихронную проверку настроек
+        /// </summary>
         public bool StartCheckSettings(Settings settings)
         {
             if (CheckNotBusy())
@@ -78,6 +90,9 @@ namespace SecureOne
             return false;
         }
 
+        /// <summary>
+        /// Начинает асихронную операцию подписи
+        /// </summary>
         public bool StartSign(FileWrapper ifw, CertificateWrapper signerCert, bool forсeDetached = false)
         {
             if (CheckNotBusy())
@@ -98,6 +113,9 @@ namespace SecureOne
             return false;
         }
 
+        /// <summary>
+        /// Начинает асихронную операцию подписи и шифрования
+        /// </summary>
         public bool StartSignEncrypt(FileWrapper ifw, CertificateWrapper signerCert, 
             CertificateWrapper recipientCert, bool cfrmt = false)
         {
@@ -120,6 +138,9 @@ namespace SecureOne
             return false;
         }
 
+        /// <summary>
+        /// Начинает асихронную операцию расшифровки
+        /// </summary>
         public bool StartDecrypt(PackageWrapper ipw, string ofn, CertificateWrapper recipientCert)
         {
             if (CheckNotBusy())
@@ -140,6 +161,9 @@ namespace SecureOne
             return false;
         }
 
+        /// <summary>
+        /// Начинает асихронную операцию проверки присоединенной подписи
+        /// </summary>
         public bool StartVerifyEncode(PackageWrapper ipw, string ofn)
         {
             if (CheckNotBusy())
@@ -160,6 +184,9 @@ namespace SecureOne
             return false;
         }
 
+        /// <summary>
+        /// Начинает асихронную операцию проверки отсоединенной подписи
+        /// </summary>
         public bool StartVerify(PackageWrapper ipw, string datafname)
         {
             if (CheckNotBusy())
@@ -180,6 +207,9 @@ namespace SecureOne
             return false;
         }
 
+        /// <summary>
+        /// Проверяет не занят ли объект
+        /// </summary>
         protected bool CheckNotBusy()
         {
             if (this.IsBusy)
@@ -235,6 +265,10 @@ namespace SecureOne
             }
         }
 
+        /// <summary>
+        /// Операция шифрования
+        /// </summary>
+        /// <returns>Список созданных артефактов</returns>
         protected PackageWrapper[] Encrypt()
         {
             // Инициализируем объект-состоянение
@@ -372,6 +406,10 @@ namespace SecureOne
             return opwlst.ToArray();
         }
 
+        /// <summary>
+        /// Операция подписи
+        /// </summary>
+        /// <returns>Созданный артефакт</returns>
         protected PackageWrapper Sign()
         {
             // Инициализируем объект-состоянение
@@ -450,6 +488,10 @@ namespace SecureOne
             return opw;
         }
 
+        /// <summary>
+        /// Операция расшифровки
+        /// </summary>
+        /// <returns>Имя файла</returns>
         protected string Decrypt()
         {
             // Инициализируем объект-состоянение
@@ -516,9 +558,8 @@ namespace SecureOne
         }
 
         /// <summary>
-        /// Проверяет и возвращает результат проверки отсоединенной подписи
+        /// Операция проверки отсоединенной подписи
         /// </summary>
-        /// <returns>True- в случае успеха</returns>
         protected bool Verify()
         {
             // Инициализируем объект-состоянение
@@ -574,9 +615,9 @@ namespace SecureOne
         }
 
         /// <summary>
-        /// Проверяет присоединенную подпись и возвращает данные
+        /// Операция проверки присоединенной подписи
         /// </summary>
-        /// <returns>В случае успешной проверки подписанные данные. В противном случае null</returns>
+        /// <returns>В случае успешной проверки имя файла.</returns>
         protected string VerifyEncode()
         {
             // Инициализируем объект-состоянение
@@ -632,7 +673,7 @@ namespace SecureOne
         }
 
         /// <summary>
-        /// Сбрасывает некорректные настройки в их значения по умолчанию
+        /// Операция сбороса некорректных настроек в их значения по умолчанию
         /// </summary>
         public bool CheckIncorrectSettings()
         {

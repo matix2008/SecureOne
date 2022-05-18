@@ -10,26 +10,6 @@ using GostCryptography.Gost_28147_89;
 
 namespace SecureOneLib.Crypto
 {
-    /*
-     * public static byte[] SignDetached(Stream dataStream, X509Certificate2 signerCert) - sig
-     * public static byte[] SignAttached(byte[] data, X509Certificate2 signerCert) - p7s
-     * 
-     * public static void Verify(byte[] signedCmsData, bool verifySignatureOnly = false)
-     * --public static void Verify(byte[] signedCmsData, byte[] data, bool verifySignatureOnly = false)
-     * public static void Verify(byte[] signedCmsData, FileStream dataStream, bool verifySignatureOnly = false)
-     * 
-     * public static void Encrypt(Stream dataStream, FileStream encryptedFileStream, X509Certificate2 recipientCert)
-     * public static byte[] Encrypt(byte[] data, X509Certificate2 recipientCert)
-     * 
-     * public static byte[] SignEncrypt(byte[] data, X509Certificate2 recipientCert, X509Certificate2 signerCert)
-     * 
-     * public static void Decrypt(Stream encryptedDataStream, FileStream dataFileStream, X509Certificate2 recipientCert) - enc
-     * public static byte[] Decrypt(byte[] encodedEnvelopedCmsData) - p7m
-     * 
-     * public static byte[] VerifyDecrypt(byte[] encodedSignedEnvelopedCmsData) - p7sm
-     */
-
-
     [SecurityCritical]
     public static class Coder
     {
@@ -67,7 +47,6 @@ namespace SecureOneLib.Crypto
                 }
             }
 
-            //ContentInfo content = new ContentInfo(new Oid("1.2.840.113549.1.7.5"),hash);
             ContentInfo content = new ContentInfo(hash);
 
             SignedCms signedCms = new SignedCms(content, true);
@@ -130,32 +109,6 @@ namespace SecureOneLib.Crypto
             // Возвращаем данные
             return signedCms.ContentInfo.Content;
         }
-
-        ///// <summary>
-        ///// Проверяет отсоединенную подпись
-        ///// </summary>
-        ///// <param name="sign"></param>
-        ///// <param name="data"></param>
-        //public static void Verify(byte[] signedCmsData, byte[] data, bool verifySignatureOnly = false)
-        //{
-        //    if (signedCmsData == null)
-        //        throw new ArgumentNullException("signedCmsData");
-        //    if (data == null)
-        //        throw new ArgumentNullException("data");
-
-        //    // Create a ContentInfo object from the inner content obtained
-        //    // independently from encodedMessage.
-        //    ContentInfo contentInfo = new ContentInfo(data);
-
-        //    // Create a new, detached SignedCms message.
-        //    SignedCms signedCms = new SignedCms(contentInfo, true);
-
-        //    // Декадируем данные подписи
-        //    signedCms.Decode(signedCmsData);
-
-        //    // Проверяем только подпись или подпись вместе со всей цепочкой сертификатов
-        //    signedCms.CheckSignature(verifySignatureOnly);
-        //}
 
         /// <summary>
         /// Проверяет отсоединенную подпись
@@ -569,7 +522,11 @@ namespace SecureOneLib.Crypto
             CmsRecipient recip = new CmsRecipient(SubjectIdentifierType.IssuerAndSerialNumber, recipientCert);
             envelopedCms.Encrypt(recip);
 
-            SignedCms signedCms = new SignedCms(envelopedCms.ContentInfo, false);
+            // получем шифрованные данные
+            byte[] encrypted = envelopedCms.Encode();
+            ContentInfo encryptedСontentInfo = new ContentInfo(encrypted);
+
+            SignedCms signedCms = new SignedCms(encryptedСontentInfo, false);
             CmsSigner signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, signerCert);
             signer.IncludeOption = X509IncludeOption.WholeChain;
             signedCms.ComputeSignature(signer);
@@ -592,20 +549,24 @@ namespace SecureOneLib.Crypto
             signedCms.CheckSignature(false);
 
             // Создаем объект для декодирования и расшифрования.
-            EnvelopedCms envelopedCms = new EnvelopedCms(signedCms.ContentInfo);
+            EnvelopedCms envelopedCms = new EnvelopedCms();
+            envelopedCms.Decode(signedCms.ContentInfo.Content);
 
+            bool decrypted = envelopedCms.RecipientInfos.Count > 0;
             foreach (RecipientInfo ri in envelopedCms.RecipientInfos)
             {
                 X509Certificate2 cert = CertificateWrapper.FindCertificateBySubjectIdentifier(StoreLocation.CurrentUser, ri.RecipientIdentifier);
-                if (cert.HasPrivateKey)
+                if (cert != null && cert.HasPrivateKey)
                 {
                     envelopedCms.Decrypt(ri);
+                    decrypted = true;
                     break;
                 }
             }
 
-            // После вызова метода Decrypt в свойстве ContentInfo 
-            // содержится расшифрованное сообщение.
+            if (!decrypted)
+                throw new SOCryptographicException("Не найден подходящий сертификат для расшифровки.");
+
             return envelopedCms.ContentInfo.Content;
         }
 
@@ -626,15 +587,20 @@ namespace SecureOneLib.Crypto
             // Декодируем сообщение.
             envelopedCms.Decode(encodedEnvelopedCmsData);
 
+            bool decrypted = decrypted = envelopedCms.RecipientInfos.Count > 0; ;
             foreach (RecipientInfo ri in envelopedCms.RecipientInfos)
             {
                 X509Certificate2 cert = CertificateWrapper.FindCertificateBySubjectIdentifier(StoreLocation.CurrentUser, ri.RecipientIdentifier);
-                if (cert.HasPrivateKey)
+                if (cert != null && cert.HasPrivateKey)
                 {
                     envelopedCms.Decrypt(ri);
+                    decrypted = true;
                     break;
                 }
             }
+
+            if (!decrypted)
+                throw new SOCryptographicException("Не найден подходящий сертификат для расшифровки.");
 
             // После вызова метода Decrypt в свойстве ContentInfo 
             // содержится расшифрованное сообщение.

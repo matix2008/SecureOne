@@ -37,12 +37,12 @@ namespace SecureOne
             {
                 _options = new Settings();
 
-                if (!_options.CheckRequiredFieldsAreFilled())
-                {
-                    Utils.MessageHelper.Warning(this, "Чаcть обязательных настроек отсутствует. Проведите найстройку системы.");
-                    OpenFormOptions();
-                }
-                else
+                //if (!_options.CheckRequiredFieldsAreFilled())
+                //{
+                //    Utils.MessageHelper.Warning(this, "Чаcть обязательных настроек отсутствует. Проведите найстройку системы.");
+                //    OpenFormOptions();
+                //}
+                //else
                 {
                     StopReporting();
                     _backgroundCryptoWorker.StartCheckSettings(_options);
@@ -243,7 +243,7 @@ namespace SecureOne
                 StartReporting();
 
                 // Начинаем асинхронную операцию
-                _backgroundCryptoWorker.StartSignEncrypt(ifw, recipientCert, _options.OwnerCertificate,
+                _backgroundCryptoWorker.StartSignEncrypt(ifw, _options.OwnerCertificate, recipientCert, 
                     _options.AllwaysUseCustomEncFrmt);
 
             }
@@ -386,6 +386,13 @@ namespace SecureOne
                             Utils.MessageHelper.Info(this, "Подпись верна!");
                         else
                             Utils.MessageHelper.Warning(this, "Подпись не верна!");
+                        break;
+                    case BackgroundCryptoWorker.AsyncCryptoOpration.CheckSettigs:
+                        if (!_options.CheckRequiredFieldsAreFilled())
+                        {
+                            Utils.MessageHelper.Warning(this, "Чаcть обязательных настроек отсутствует. Проведите найстройку системы.");
+                            OpenFormOptions();
+                        }
                         break;
                 }
             }
