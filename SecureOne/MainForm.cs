@@ -1,14 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows.Forms;
 using System.IO;
 using System.Text.RegularExpressions;
-using System.Security;
 using SecureOneLib;
-using System.Resources;
-using System.Reflection;
-using SecureOneLib.Crypto;
 
 namespace SecureOne
 {
@@ -283,35 +278,34 @@ namespace SecureOne
                     StartReporting();
                     _backgroundCryptoWorker.StartDecrypt(ipw, ofn, _options.OwnerCertificate);
                 }
+                else if (ipw.Type == PackageWrapper.PackageType.P7S)
+                {
+                    StartReporting();
+                    _backgroundCryptoWorker.StartVerifyEncode(ipw, ofn);
+                }
                 else 
                 {
-                    // Имя файла для проверки отсоединенной подписи
-                    string filename = String.Empty;
+                    System.Diagnostics.Debug.Assert(ipw.Type == PackageWrapper.PackageType.SIG);
 
-                    if (ipw.Type == PackageWrapper.PackageType.SIG)
+                    // Если мы тут, значит это отсоединенная подпись
+                    // Запрашиваем файл данных
+                    openFileDialog.InitialDirectory = _options.OwnerWorkingFolder;
+                    openFileDialog.Filter = "All files (*.*)|*.*";
+                    openFileDialog.CheckFileExists = true;
+                    openFileDialog.FilterIndex = 1;
+                    openFileDialog.RestoreDirectory = true;
+                    openFileDialog.Multiselect = false;
+                    openFileDialog.FileName = ofn;
+                    openFileDialog.Title = "Загрузите файл данных для которого была сформирована подпись.";
+
+                    if (openFileDialog.ShowDialog() != DialogResult.OK)
                     {
-                        // Если мы тут, значит это отсоединенная подпись
-                        // Запрашиваем файл данных
-                        openFileDialog.InitialDirectory = _options.OwnerWorkingFolder;
-                        openFileDialog.Filter = "All files (*.*)|*.*";
-                        openFileDialog.CheckFileExists = true;
-                        openFileDialog.FilterIndex = 1;
-                        openFileDialog.RestoreDirectory = true;
-                        openFileDialog.Multiselect = false;
-                        openFileDialog.FileName = ofn;
-                        openFileDialog.Title = "Загрузите файл данных для которого была сформирована подпись.";
-
-                        if (openFileDialog.ShowDialog() != DialogResult.OK)
-                        {
-                            Utils.MessageHelper.Warning(this, "Файл данных не загружен. Проверка подписи невозможна.");
-                            return;
-                        }
-
-                        filename = openFileDialog.FileName;
+                        Utils.MessageHelper.Warning(this, "Файл данных не загружен. Проверка подписи невозможна.");
+                        return;
                     }
 
                     StartReporting();
-                    _backgroundCryptoWorker.StartVerify(ipw, filename);
+                    _backgroundCryptoWorker.StartVerify(ipw, openFileDialog.FileName);
                 }
             }
             catch (Exception ex)
@@ -376,6 +370,16 @@ namespace SecureOne
                     case BackgroundCryptoWorker.AsyncCryptoOpration.Decrypt:
                         if (Utils.MessageHelper.QuestionYN(this, "Файл успешно проверен и расшифрован. Открыть расшифрованный файл?") == DialogResult.Yes)
                             System.Diagnostics.Process.Start(e.Result as string);
+                        break;
+                    case BackgroundCryptoWorker.AsyncCryptoOpration.VerifyEncode:
+                        {
+                            string filename = e.Result as string;
+                            if (filename.Length == 0 )
+                                Utils.MessageHelper.Warning(this, "Подпись не верна!");
+                            else
+                            if (Utils.MessageHelper.QuestionYN(this, "Файл успешно проверен. Открыть файл?") == DialogResult.Yes)
+                                System.Diagnostics.Process.Start(e.Result as string);
+                        }
                         break;
                     case BackgroundCryptoWorker.AsyncCryptoOpration.Verify:
                         if (((bool)e.Result))

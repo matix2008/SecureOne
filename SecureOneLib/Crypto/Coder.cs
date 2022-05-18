@@ -10,9 +10,36 @@ using GostCryptography.Gost_28147_89;
 
 namespace SecureOneLib.Crypto
 {
+    /*
+     * public static byte[] SignDetached(Stream dataStream, X509Certificate2 signerCert) - sig
+     * public static byte[] SignAttached(byte[] data, X509Certificate2 signerCert) - p7s
+     * 
+     * public static void Verify(byte[] signedCmsData, bool verifySignatureOnly = false)
+     * --public static void Verify(byte[] signedCmsData, byte[] data, bool verifySignatureOnly = false)
+     * public static void Verify(byte[] signedCmsData, FileStream dataStream, bool verifySignatureOnly = false)
+     * 
+     * public static void Encrypt(Stream dataStream, FileStream encryptedFileStream, X509Certificate2 recipientCert)
+     * public static byte[] Encrypt(byte[] data, X509Certificate2 recipientCert)
+     * 
+     * public static byte[] SignEncrypt(byte[] data, X509Certificate2 recipientCert, X509Certificate2 signerCert)
+     * 
+     * public static void Decrypt(Stream encryptedDataStream, FileStream dataFileStream, X509Certificate2 recipientCert) - enc
+     * public static byte[] Decrypt(byte[] encodedEnvelopedCmsData) - p7m
+     * 
+     * public static byte[] VerifyDecrypt(byte[] encodedSignedEnvelopedCmsData) - p7sm
+     */
+
+
     [SecurityCritical]
     public static class Coder
     {
+        /// <summary>
+        /// Создает отсоединенную подпсись
+        /// </summary>
+        /// <remarks>Созадет файл - sig</remarks>
+        /// <param name="dataStream">Поток данных для подписи</param>
+        /// <param name="signerCert">Сертификат владельца (подписанта)</param>
+        /// <returns>Данные контейнера PKCS#7</returns>
         public static byte[] SignDetached(Stream dataStream, X509Certificate2 signerCert)
         {
             if (dataStream == null)
@@ -53,6 +80,13 @@ namespace SecureOneLib.Crypto
             return signedCms.Encode();
         }
 
+        /// <summary>
+        /// Создает присоединенную подпись
+        /// </summary>
+        /// <remarks>Создет файл p7s</remarks>
+        /// <param name="data">Данные для подписи</param>
+        /// <param name="signerCert">Сертификат владельца (подписанта)</param>
+        /// <returns>Данные контейнера PKCS#7</returns>
         public static byte[] SignAttached(byte[] data, X509Certificate2 signerCert)
         {
             if (data == null)
@@ -75,58 +109,60 @@ namespace SecureOneLib.Crypto
         }
 
         /// <summary>
-        /// Проверяет присоединенную подпись
+        /// Проверяет присоединенную подпись (p7s)
         /// </summary>
-        /// <param name="sign"></param>
-        /// <param name="data"></param>
-        public static void Verify(byte[] signedCmsData, bool verifySignatureOnly = false)
+        /// <param name="signedCmsData">Данные контейнера PKCS#7</param>
+        /// <param name="verifySignatureOnly">True - если проверяем только подпись</param>
+        /// <returns>Подписанные данные</returns>
+        public static byte[] Verify(byte[] signedCmsData, bool verifySignatureOnly = false)
         {
             if (signedCmsData == null)
                 throw new ArgumentNullException("signedCmsData");
 
-            // Create a new, nondetached SignedCms message.
+            // Создаем объект для проверки подписи
             SignedCms signedCms = new SignedCms();
 
-            // encodedMessage is the encoded message received from
-            // the sender.
+            // Декодируем сообщение
             signedCms.Decode(signedCmsData);
 
-            // Verify the signature without validating the
-            // certificate.
+            // Проверяем подпись
             signedCms.CheckSignature(verifySignatureOnly);
+            // Возвращаем данные
+            return signedCms.ContentInfo.Content;
         }
+
+        ///// <summary>
+        ///// Проверяет отсоединенную подпись
+        ///// </summary>
+        ///// <param name="sign"></param>
+        ///// <param name="data"></param>
+        //public static void Verify(byte[] signedCmsData, byte[] data, bool verifySignatureOnly = false)
+        //{
+        //    if (signedCmsData == null)
+        //        throw new ArgumentNullException("signedCmsData");
+        //    if (data == null)
+        //        throw new ArgumentNullException("data");
+
+        //    // Create a ContentInfo object from the inner content obtained
+        //    // independently from encodedMessage.
+        //    ContentInfo contentInfo = new ContentInfo(data);
+
+        //    // Create a new, detached SignedCms message.
+        //    SignedCms signedCms = new SignedCms(contentInfo, true);
+
+        //    // Декадируем данные подписи
+        //    signedCms.Decode(signedCmsData);
+
+        //    // Проверяем только подпись или подпись вместе со всей цепочкой сертификатов
+        //    signedCms.CheckSignature(verifySignatureOnly);
+        //}
 
         /// <summary>
         /// Проверяет отсоединенную подпись
         /// </summary>
-        /// <param name="sign"></param>
-        /// <param name="data"></param>
-        public static void Verify(byte[] signedCmsData, byte[] data, bool verifySignatureOnly = false)
-        {
-            if (signedCmsData == null)
-                throw new ArgumentNullException("signedCmsData");
-            if (data == null)
-                throw new ArgumentNullException("data");
-
-            // Create a ContentInfo object from the inner content obtained
-            // independently from encodedMessage.
-            ContentInfo contentInfo = new ContentInfo(data);
-
-            // Create a new, detached SignedCms message.
-            SignedCms signedCms = new SignedCms(contentInfo, true);
-
-            // Декадируем данные подписи
-            signedCms.Decode(signedCmsData);
-
-            // Проверяем только подпись или подпись вместе со всей цепочкой сертификатов
-            signedCms.CheckSignature(verifySignatureOnly);
-        }
-
-        /// <summary>
-        /// Проверяет отсоединенную подпись
-        /// </summary>
-        /// <param name="sign"></param>
-        /// <param name="data"></param>
+        /// <param name="signedCmsData">Данные контейнера PKCS#7</param>
+        /// <param name="dataStream">Поток данных для проверки</param>
+        /// <param name="verifySignatureOnly">True - если проверяется только подпись</param>
         public static void Verify(byte[] signedCmsData, FileStream dataStream, bool verifySignatureOnly = false)
         {
             if (signedCmsData == null)
@@ -182,6 +218,12 @@ namespace SecureOneLib.Crypto
             signedCms.CheckSignature(verifySignatureOnly);
         }
 
+        /// <summary>
+        /// Ширует поток в формате SecureOne
+        /// </summary>
+        /// <param name="dataStream">Данные для шифрования</param>
+        /// <param name="encryptedFileStream">Поток для записи шифрованных данных</param>
+        /// <param name="recipientCert">Сертифкат открытого ключа получателя</param>
         public static void Encrypt(Stream dataStream, FileStream encryptedFileStream, X509Certificate2 recipientCert)
         {
             if (dataStream == null)
@@ -233,7 +275,7 @@ namespace SecureOneLib.Crypto
                  * Шифрованный сессионный ключ (senderSessionKey.Key.Length)
                  */
 
-                var offset = sizeof(UInt16) +
+    var offset = sizeof(UInt16) +
                     sizeof(Int32) + senderSessionKey.IV.Length +
                     sizeof(Int32) + sessionKey.Length;
 
@@ -275,6 +317,9 @@ namespace SecureOneLib.Crypto
             }
         }
 
+        /// <summary>
+        /// Аналог функции Encrypt - возвращает шифрованный ключ и синхропосылку
+        /// </summary>
         public static void EncryptEx(Stream dataStream, FileStream encryptedFileStream, X509Certificate2 recipientCert, out byte[] IV, out byte[] CKey)
         {
             if (dataStream == null)
@@ -325,6 +370,12 @@ namespace SecureOneLib.Crypto
             }
         }
 
+        /// <summary>
+        /// Расшифровывает даные потока в формате SecureOne
+        /// </summary>
+        /// <param name="encryptedDataStream">Поток зашифрованных данных (формат SecureOne)</param>
+        /// <param name="dataFileStream">Поток для записи расшифрованных данных</param>
+        /// <param name="recipientCert">Сертификат закрытого ключа получателя</param>
         public static void Decrypt(Stream encryptedDataStream, FileStream dataFileStream, X509Certificate2 recipientCert)
         {
             if (encryptedDataStream == null)
@@ -407,6 +458,9 @@ namespace SecureOneLib.Crypto
             }
         }
 
+        /// <summary>
+        /// Аналого функции Decrypt - использует передаеваемый ключ и синхропосылку
+        /// </summary>
         public static void DecryptEx(Stream encryptedDataStream, FileStream dataFileStream, X509Certificate2 recipientCert, byte[] IV, byte[] CKey)
         {
             if (encryptedDataStream == null)
@@ -457,9 +511,9 @@ namespace SecureOneLib.Crypto
         /// Шифрует даннные по стандарту PKCS7 / CMS на открытом ключе получателя
         /// Объем данных должен быть ограничен  (менее ~50 Мб в зависимости от кол-ва оперативной памяти)
         /// </summary>
-        /// <param name="data"></param>
-        /// <param name="recipientCert"></param>
-        /// <returns></returns>
+        /// <param name="data">Данные для шифрования</param>
+        /// <param name="recipientCert">Сертификат получателя</param>
+        /// <returns>Данные контейнера PKCS#7 - p7m</returns>
         public static byte[] Encrypt(byte[] data, X509Certificate2 recipientCert)
         {
             if (data == null)
@@ -493,6 +547,13 @@ namespace SecureOneLib.Crypto
             return envelopedCms.Encode();
         }
 
+        /// <summary>
+        /// Шифрует и подписывает даннные по стандарту PKCS7 / CMS на открытом ключе получателя
+        /// </summary>
+        /// <param name="data">Данные для шифрования и подписи</param>
+        /// <param name="recipientCert">Сертификат получателя - для шифрования</param>
+        /// <param name="signerCert">Сертификат владельца - для подписи</param>
+        /// <returns>Данные контейнера PKCS#7 - p7sm</returns>
         public static byte[] SignEncrypt(byte[] data, X509Certificate2 recipientCert, X509Certificate2 signerCert)
         {
             if (data == null)
@@ -515,6 +576,12 @@ namespace SecureOneLib.Crypto
             return signedCms.Encode();
         }
 
+        /// <summary>
+        /// Проверяет подпись и расшифровывает данные по стандарту PKCS7 / CMS производя поиск сертификата в хранилище
+        /// </summary>
+        /// <remarks>Проверка и расшифровака файлов p7sm</remarks>
+        /// <param name="encodedSignedEnvelopedCmsData">Данные контейнера PKCS#7</param>
+        /// <returns>Расшифрованные данные</returns>
         public static byte[] VerifyDecrypt(byte[] encodedSignedEnvelopedCmsData)
         {
             if (encodedSignedEnvelopedCmsData == null)
@@ -543,10 +610,11 @@ namespace SecureOneLib.Crypto
         }
 
         /// <summary>
-        /// Расшифровывает данные по стандарту PKCS7 / CMS производя поиск сертификата в хралище
+        /// Расшифровывает данные по стандарту PKCS7 / CMS производя поиск сертификата в хранилище
         /// </summary>
-        /// <param name="encodedEnvelopedCms"></param>
-        /// <returns></returns>
+        /// <remarks>Расшифровка файлов p7m</remarks>
+        /// <param name="encodedEnvelopedCms">Данные контейнера PKCS#7</param>
+        /// <returns>Расшифрованные данные</returns>
         public static byte[] Decrypt(byte[] encodedEnvelopedCmsData)
         {
             if (encodedEnvelopedCmsData == null)

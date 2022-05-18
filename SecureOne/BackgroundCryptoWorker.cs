@@ -15,7 +15,7 @@ namespace SecureOne
 {
     public class BackgroundCryptoWorker : BackgroundWorker
     {
-        public enum AsyncCryptoOpration { Unknown, Sign, SignEncrypt, Verify, Decrypt, CheckSettigs };
+        public enum AsyncCryptoOpration { Unknown, Sign, SignEncrypt, Verify, Decrypt, VerifyEncode, CheckSettigs };
 
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
@@ -140,6 +140,26 @@ namespace SecureOne
             return false;
         }
 
+        public bool StartVerifyEncode(PackageWrapper ipw, string ofn)
+        {
+            if (CheckNotBusy())
+            {
+                lock (_lockObj)
+                {
+                    _asyncCryptoOpration = AsyncCryptoOpration.VerifyEncode;
+                    _inputFileWrapper = ipw;
+                    _signerCertificate = null;
+                    _recipientCertificate = null;
+                    _fileName = ofn;
+                }
+
+                RunWorkerAsync();
+                return true;
+            }
+
+            return false;
+        }
+
         public bool StartVerify(PackageWrapper ipw, string datafname)
         {
             if (CheckNotBusy())
@@ -200,6 +220,8 @@ namespace SecureOne
                             e.Result = Decrypt();
                         else if (_asyncCryptoOpration == AsyncCryptoOpration.Verify)
                             e.Result = Verify();
+                        else if (_asyncCryptoOpration == AsyncCryptoOpration.VerifyEncode)
+                            e.Result = VerifyEncode();
                         else if (_asyncCryptoOpration == AsyncCryptoOpration.CheckSettigs)
                             e.Result = CheckIncorrectSettings();
                         else
@@ -469,19 +491,18 @@ namespace SecureOne
                 }
                 else
                 {
-                    log($"Читаем в массив данные файла: {_inputFileWrapper}");
+                    log($"Читаем в массив данные файла и расшифровываем его: {_inputFileWrapper}");
 
                     // Если мы тут, значит это p7m или p7sm файл
                     byte[] encdata = _inputFileWrapper.ReadAllBytes();
 
-                    log($"Рассшифровываем данные файла: {_inputFileWrapper}");
+                    byte[] decrypted = ((PackageWrapper)_inputFileWrapper).Type == PackageWrapper.PackageType.P7M 
+                        ? Coder.Decrypt(encdata) : Coder.VerifyDecrypt(encdata);
 
-                    byte[] decrypted = null;
-
-                    if (((PackageWrapper)_inputFileWrapper).Type == PackageWrapper.PackageType.P7M)
-                        decrypted = Coder.Decrypt(encdata); // Расшифровываем
-                    else
-                        decrypted = Coder.VerifyDecrypt(encdata);   // Проверяем и расшифровываем
+                    //if (((PackageWrapper)_inputFileWrapper).Type == PackageWrapper.PackageType.P7M)
+                    //    decrypted = Coder.Decrypt(encdata); // Расшифровываем
+                    //else
+                    //    decrypted = Coder.VerifyDecrypt(encdata);   // Проверяем и расшифровываем
 
                     log($"Сохраняем расшифрованные данные в файл: {_fileName}");
 
@@ -495,9 +516,9 @@ namespace SecureOne
         }
 
         /// <summary>
-        /// 
+        /// Проверяет и возвращает результат проверки отсоединенной подписи
         /// </summary>
-        /// <returns></returns>
+        /// <returns>True- в случае успеха</returns>
         protected bool Verify()
         {
             // Инициализируем объект-состоянение
@@ -523,21 +544,18 @@ namespace SecureOne
 
             _report(SOState.CryptoState.Start, $"Проверка подписи файла: {_inputFileWrapper}");
 
-            byte[] sign = _inputFileWrapper.ReadAllBytes();
             try
             {
-                if (_fileName.Length > 0)
+                // Читаем данные подписи
+                byte[] sign = _inputFileWrapper.ReadAllBytes();
+
+                System.Diagnostics.Debug.Assert(_fileName.Length > 0);
+
+                // Открываем и читаем данные файла для проверки подписи
+                using (FileStream ifs = File.OpenRead(_fileName))
                 {
-                    using (FileStream ifs = File.OpenRead(_fileName))
-                    {
-                        log($"Начинаем проверку отсоединенной подписи");
-                        Coder.Verify(sign, ifs);
-                    }
-                }
-                else
-                {
-                    log($"Начинаем проверку присоединенной подписи");
-                    Coder.Verify(sign);
+                    log($"Начинаем проверку отсоединенной подписи");
+                    Coder.Verify(sign, ifs);
                 }
 
                 _report(SOState.CryptoState.Completed, $"Подпись файла {_inputFileWrapper} успешно проверена");
@@ -553,6 +571,64 @@ namespace SecureOne
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Проверяет присоединенную подпись и возвращает данные
+        /// </summary>
+        /// <returns>В случае успешной проверки подписанные данные. В противном случае null</returns>
+        protected string VerifyEncode()
+        {
+            // Инициализируем объект-состоянение
+            SOState sos = new SOState();
+
+            // Лямбда для оповещения о состоянии
+            Action<SOState.CryptoState, string> _report = (state, message) =>
+            {
+                logger.Info(message);
+
+                sos.State = state;
+                sos.Message = message;
+
+                ReportProgress(0, sos);
+            };
+
+            // Короткая лямбда
+            Action<string> report = message => _report(SOState.CryptoState.InProgress, message);
+            Action<string> log = message => logger.Info(message);
+
+            // очищаем память
+            GC.Collect();
+
+            _report(SOState.CryptoState.Start, $"Проверка присоединенной подписи файла: {_inputFileWrapper}");
+
+            byte[] sign = _inputFileWrapper.ReadAllBytes();
+            try
+            {
+                log($"Начинаем проверку присоединенной подписи");
+
+                byte[] decoded = Coder.Verify(sign);
+
+                _report(SOState.CryptoState.Completed, $"Подпись файла {_inputFileWrapper} успешно проверена");
+
+                // Здесь именно FileMode = CreateNew, т.к. файл с данными уже может существовать  с тем же именем
+                using (FileStream ofs = new FileStream(_fileName, FileMode.CreateNew))
+                {
+                    ofs.Write(decoded, 0, decoded.Length);
+                }
+
+                return _fileName;
+            }
+            catch (CryptographicException ex)
+            {
+                if (((uint)ex.HResult) == 0xC000A000)
+                {
+                    _report(SOState.CryptoState.Completed, $"Подпись файла {_inputFileWrapper} не прошла проверку");
+                }
+                else throw;
+            }
+
+            return String.Empty;
         }
 
         /// <summary>
