@@ -5,14 +5,13 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using SecureOneLib;
-using SecureOneLib.Utilities;
 
 namespace SecureOne
 {
     /// <summary>
     /// Реализует набор системных настроект приложения
     /// </summary>
-    public class Settings : IDisposable
+    public class Settings
     {
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
@@ -20,9 +19,6 @@ namespace SecureOne
         {
             // Загружаем данные найтроек из файла
             Load();
-
-            // Переустанавливаем некорректные найтроки
-            ResetIncorrectSettings();
         }
 
         public string OwnerWorkingFolder { get; set; }
@@ -34,7 +30,7 @@ namespace SecureOne
         public void Reset()
         {
             Properties.Settings.Default.Reset();
-            logger.Info("Aplication settings was reseted.");
+            logger.Info("Настройки приложения перегружены");
 
             Load();
         }
@@ -43,7 +39,7 @@ namespace SecureOne
         {
             try
             {
-                logger.Info("Aplication settings are going to load.");
+                logger.Info("Начинаем загружать системные настройки");
 
                 OwnerWorkingFolder = Properties.Settings.Default.OwnerWorkingFolder;
                 AllwaysUseDetachedSign = Properties.Settings.Default.AllwaysUseDetachedSign;
@@ -51,12 +47,12 @@ namespace SecureOne
                 OwnerCertificate = CertificateWrapper.Parse(Properties.Settings.Default.OwnerCertificate);
                 RecipientsCertificatesCollection = new CertificateCollectionWrapper(Properties.Settings.Default.RecipientsCertificatesCollection);
 
-                logger.Info("Aplication settings successfully loaded.");
+                logger.Info("Системные настройки успешно загружены");
             }
             catch(Exception ex)
             {
-                logger.Error(ex, "Exeption during loading application settings.");
-                throw ex;
+                logger.Error(ex, "Ошибка во время загрузки системных настроек");
+                throw;
             }
         }
 
@@ -70,20 +66,15 @@ namespace SecureOne
                 Properties.Settings.Default.OwnerCertificate = OwnerCertificate?.ToString() ?? string.Empty;
                 Properties.Settings.Default.RecipientsCertificatesCollection = RecipientsCertificatesCollection?.ToString() ?? string.Empty;
 
-                logger.Info("Aplication settings successfully saved.");
+                logger.Info("Системные настройки успешно сохранены");
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Exeption during saving application settings.");
-                throw ex;
+                logger.Error(ex, "Ошибка во время сохранения системных настроек");
+                throw;
             }
 
             Properties.Settings.Default.Save();
-        }
-
-        public void Dispose()
-        {
-            Load();
         }
 
         /// <summary>
@@ -96,31 +87,5 @@ namespace SecureOne
                     OwnerWorkingFolder.Length > 0);
         }
 
-        /// <summary>
-        /// Сбрасывает некорректные настройки в их значения по умолчанию
-        /// </summary>
-        protected void ResetIncorrectSettings()
-        {
-            logger.Info("Aplication settings are going to check for incorrect values.");
-
-            if (OwnerWorkingFolder.Length == 0 || !Directory.Exists(OwnerWorkingFolder))
-            {
-                OwnerWorkingFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                logger.Info($"Working folder was reset to default value: {OwnerWorkingFolder}");
-            }
-
-            if (OwnerCertificate != null)
-            {
-                if (!OwnerCertificate.Value.HasPrivateKey || !OwnerCertificate.Value.Verify())
-                {
-                    OwnerCertificate = null;
-                    logger.Info($"Owner's certificate was not passed verification and deleted.");
-                }
-            }
-
-            //TODO: Должна быть проверка действительности установленных сертификатов
-
-            logger.Info("All aplication settings was checked.");
-        }
     }
 }

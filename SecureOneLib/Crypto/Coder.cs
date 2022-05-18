@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Security;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -23,9 +19,8 @@ namespace SecureOneLib.Crypto
                 throw new ArgumentNullException("dataStream");
             if (signerCert == null)
                 throw new ArgumentNullException("signerCert");
-
             if (!signerCert.HasPrivateKey)
-                throw new SOCryptographicException("Certificate for signing has not a private key.");
+                throw new SOCryptographicException("У сертификата подписи нет закрытого ключа.");
 
             byte[] hash;
             AsymmetricAlgorithm privateKey = signerCert.GetPrivateKeyAlgorithm();
@@ -66,7 +61,7 @@ namespace SecureOneLib.Crypto
                 throw new ArgumentNullException("signerCert");
 
             if (!signerCert.HasPrivateKey)
-                throw new SOCryptographicException("Certificate for signing has not a private key.");
+                throw new SOCryptographicException("У сертификата подписи нет закрытого ключа.");
 
             ContentInfo content = new ContentInfo(data);
             SignedCms signedCms = new SignedCms(content, false);
@@ -196,7 +191,7 @@ namespace SecureOneLib.Crypto
             if (recipientCert == null)
                 throw new ArgumentNullException("recipientCert");
             if (!encryptedFileStream.CanWrite)
-                throw new ArgumentException("Can't write to encryptedFileStream");
+                throw new ArgumentException("Поток для шифрованных данных не доступен для записи.");
 
             AsymmetricAlgorithm publicKey = recipientCert.GetPublicKeyAlgorithm();
 
@@ -289,7 +284,7 @@ namespace SecureOneLib.Crypto
             if (recipientCert == null)
                 throw new ArgumentNullException("recipientCert");
             if (!encryptedFileStream.CanWrite)
-                throw new ArgumentException("Can't write to encryptedFileStream");
+                throw new ArgumentException("Поток для шифрованных данных не доступен для записи.");
 
             AsymmetricAlgorithm publicKey = recipientCert.GetPublicKeyAlgorithm();
 
@@ -339,7 +334,7 @@ namespace SecureOneLib.Crypto
             if (recipientCert == null)
                 throw new ArgumentNullException("recipientCert");
             if (!dataFileStream.CanWrite)
-                throw new ArgumentException("Can't write to dataFileStream");
+                throw new ArgumentException("Поток для расшифрованных данных не доступен для записи.");
 
             /*
              * Заголовок:
@@ -359,7 +354,7 @@ namespace SecureOneLib.Crypto
             encryptedDataStream.Read(_magic, 0, sizeof(UInt16));
             // сравниваем
             if (BitConverter.ToUInt16(_magic, 0) != 0xABBA)
-                throw new SOInvalidFormatException("Invalid stream format. Unknown magic value.");
+                throw new SOInvalidFormatException("Поток с шифрованными данными имеет неверный формат. Неверное значение 'магического' числа.");
             
             // буфер для длины синхропосылки или шифрованного сессионного ключа
             byte[] _len = new byte[sizeof(Int32)];
@@ -421,7 +416,7 @@ namespace SecureOneLib.Crypto
             if (recipientCert == null)
                 throw new ArgumentNullException("recipientCert");
             if (!dataFileStream.CanWrite)
-                throw new ArgumentException("Can't write to dataFileStream");
+                throw new ArgumentException("Поток для расшифрованных данных не доступен для записи.");
             if (IV == null)
                 throw new ArgumentNullException("IV");
             if (CKey == null)
@@ -534,7 +529,7 @@ namespace SecureOneLib.Crypto
 
             foreach (RecipientInfo ri in envelopedCms.RecipientInfos)
             {
-                X509Certificate2 cert = LoadCertificate2(StoreLocation.CurrentUser, ri.RecipientIdentifier);
+                X509Certificate2 cert = CertificateWrapper.FindCertificateBySubjectIdentifier(StoreLocation.CurrentUser, ri.RecipientIdentifier);
                 if (cert.HasPrivateKey)
                 {
                     envelopedCms.Decrypt(ri);
@@ -565,7 +560,7 @@ namespace SecureOneLib.Crypto
 
             foreach (RecipientInfo ri in envelopedCms.RecipientInfos)
             {
-                X509Certificate2 cert = LoadCertificate2(StoreLocation.CurrentUser, ri.RecipientIdentifier);
+                X509Certificate2 cert = CertificateWrapper.FindCertificateBySubjectIdentifier(StoreLocation.CurrentUser, ri.RecipientIdentifier);
                 if (cert.HasPrivateKey)
                 {
                     envelopedCms.Decrypt(ri);
@@ -576,39 +571,6 @@ namespace SecureOneLib.Crypto
             // После вызова метода Decrypt в свойстве ContentInfo 
             // содержится расшифрованное сообщение.
             return envelopedCms.ContentInfo.Content;
-        }
-
-        public static X509Certificate2 LoadCertificate2(StoreLocation storeLocation, SubjectIdentifier subjIdentifier)
-        {
-            if (subjIdentifier == null)
-                throw new ArgumentNullException("subjIdentifier");
-
-            X509Store store = new X509Store(storeLocation);
-            store.Open(OpenFlags.ReadOnly);
-            X509Certificate2Collection certCollection = store.Certificates;
-            X509Certificate2 x509 = null;
-
-            string SerialNumber = String.Empty;
-            string IssuerName = String.Empty;
-
-            X509IssuerSerial issuerSerial;
-
-            if (subjIdentifier.Type == SubjectIdentifierType.IssuerAndSerialNumber)
-            {
-                issuerSerial = (X509IssuerSerial)subjIdentifier.Value;
-            }
-
-            foreach (X509Certificate2 c in certCollection)
-            {
-                if (c.SerialNumber == issuerSerial.SerialNumber && c.Issuer == issuerSerial.IssuerName)
-                {
-                    x509 = c;
-                    break;
-                }
-            }
-
-            store.Close();
-            return x509;
         }
     }
 }

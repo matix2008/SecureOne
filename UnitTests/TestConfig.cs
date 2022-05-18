@@ -1,16 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
-using System.Security;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using GostCryptography;
 
 namespace UnitTests
 {
+    /// <summary>
+    /// Модуль конфигурации
+    /// </summary>
     static class TestConfig
     {
         public const long _minFileSize = 1024;                  // 1 Кб
@@ -21,13 +19,15 @@ namespace UnitTests
         public const StoreName DefaultStoreName = StoreName.My;
         public const StoreLocation DefaultStoreLocation = StoreLocation.CurrentUser;
 
+        /// <summary>
+        /// Статический конструктор - инициализирует конифигурационный модуль для выполнения тестов
+        /// </summary>
         static TestConfig()
         {
             //DefaultFileRootLocation = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             DefaultFileRootLocation = @"d:\temp";
 
             GostPKCert = FindCertificate(DefaultStoreName, DefaultStoreLocation, filter: c => (c.IsGost() && c.HasPrivateKey));
-            GostPKCert2 = FindCertificate(DefaultStoreName, DefaultStoreLocation, filter: c => (c.IsGost() && c.HasPrivateKey && (GostPKCert == null || !c.SerialNumber.Equals(GostPKCert.SerialNumber))));
             GostPubKCert = FindCertificate(DefaultStoreName, DefaultStoreLocation, filter: c => (c.IsGost() && !c.HasPrivateKey));
 
             NoGostPKCert = FindCertificate(DefaultStoreName, DefaultStoreLocation, filter: c => (!c.IsGost() && c.HasPrivateKey));
@@ -38,18 +38,45 @@ namespace UnitTests
             SmallFile = FindFile(DefaultFileRootLocation, "*.*", filter: f => (f.Length >= _minFileSize && f.Length <= _maxSmallFileSize));  // больше 1 и меньше 100 Кб
         }
 
+        /// <summary>
+        /// Рабочий каталог для поиска файлов и создания временных файлов
+        /// </summary>
         public static string DefaultFileRootLocation { get; }
 
+        /// <summary>
+        /// Сертификат №1 с закрытым ключом по ГОСТ
+        /// </summary>
         public static X509Certificate2 GostPKCert { get;  }
-        public static X509Certificate2 GostPKCert2 { get; }
+        /// <summary>
+        /// Сертификат без закрытого ключа по ГОСТ
+        /// </summary>
         public static X509Certificate2 GostPubKCert { get; }
+        /// <summary>
+        /// Сертификат #1 закрытого ключа (не ГОСТ)
+        /// </summary>
         public static X509Certificate2 NoGostPKCert { get; }
+        /// <summary>
+        /// Сертификат #2 закрытого ключа (не ГОСТ)
+        /// </summary>
         public static X509Certificate2 NoGostPKCert2 { get; }
+        /// <summary>
+        /// Сертификат без закрытого ключа (не ГОСТ)
+        /// </summary>
         public static X509Certificate2 NoGostPubKCert { get; }
 
+        /// <summary>
+        /// Большой файл
+        /// </summary>
         public static FileStream BigFile { get; }
+        /// <summary>
+        /// Маленький файл
+        /// </summary>
         public static FileStream SmallFile { get; }
 
+        /// <summary>
+        /// Формирует случайное имя файла
+        /// </summary>
+        /// <returns>Полный путь к файлу с новым именем</returns>
         public static string GetTempFileName()
         {
             if (Directory.Exists(DefaultFileRootLocation))
@@ -58,6 +85,13 @@ namespace UnitTests
             return String.Empty;
         }
 
+        /// <summary>
+        /// Ищет сертификат по условию
+        /// </summary>
+        /// <param name="storeName">Хранилище</param>
+        /// <param name="storeLocation">Расположение</param>
+        /// <param name="filter">Фильтр</param>
+        /// <returns>Найденый сертификат</returns>
         public static X509Certificate2 FindCertificate(StoreName storeName = DefaultStoreName, StoreLocation storeLocation = DefaultStoreLocation, Predicate<X509Certificate2> filter = null)
         {
             var store = new X509Store(storeName, storeLocation);
@@ -81,6 +115,13 @@ namespace UnitTests
             return null;
         }
 
+        /// <summary>
+        /// Ищет файл в заданной директории по условию и открывает его для чтения
+        /// </summary>
+        /// <param name="path">Верхнеуровневый каталог</param>
+        /// <param name="pattern">Шаблон имени файла</param>
+        /// <param name="filter">Фильтр</param>
+        /// <returns>Поток связанный с данным файлом</returns>
         public static FileStream FindFile(string path = "", string pattern = "*.*", Predicate<FileInfo> filter = null)
         {
             if (path.Length == 0)
@@ -102,6 +143,12 @@ namespace UnitTests
             return null;
         }
 
+        /// <summary>
+        /// Сравнивает два пока между собой
+        /// </summary>
+        /// <param name="s1">Поток 1</param>
+        /// <param name="s2">Поток 1</param>
+        /// <returns>Результат сравнения. True - содержимое потоков одинаково. False - потоки отличаются.</returns>
         public static bool CompareStreams(Stream s1, Stream s2)
         {
             if (s1.Length != s2.Length)

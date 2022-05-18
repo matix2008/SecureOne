@@ -5,9 +5,11 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography.Pkcs;
+using System.Security.Cryptography.Xml;
 using System.Text.RegularExpressions;
 
-namespace SecureOneLib.Utilities
+namespace SecureOneLib
 {
     /// <summary>
     /// Реализует обертку над сертификатом X509Certificate2
@@ -88,25 +90,58 @@ namespace SecureOneLib.Utilities
             store.Close();
             return null;
         }
-        /// <summary>
-        /// Ищет сертификат по подстроке в названии субъекта
-        /// </summary>
-        /// <param name="sn">Серийный номер</param>
-        /// <returns>Сертификат или null</returns>
-        public static X509Certificate2 FindCertificateBySN(string sn)
+        ///// <summary>
+        ///// Ищет сертификат по подстроке в названии субъекта
+        ///// </summary>
+        ///// <param name="sn">Серийный номер</param>
+        ///// <returns>Сертификат или null</returns>
+        //public static X509Certificate2 FindCertificateBySN(string sn)
+        //{
+        //    X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+        //    store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
+
+        //    X509Certificate2Collection fcollection = (X509Certificate2Collection)store.Certificates.
+        //        Find(X509FindType.FindByTimeValid, DateTime.Now, false);
+
+        //    foreach (var cert in fcollection)
+        //        if (cert.SerialNumber.Equals(sn))
+        //            return cert;
+
+        //    store.Close();
+        //    return null;
+        //}
+
+        public static X509Certificate2 FindCertificateBySubjectIdentifier(StoreLocation storeLocation, SubjectIdentifier subjIdentifier)
         {
-            X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
-            store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
+            if (subjIdentifier == null)
+                throw new ArgumentNullException("subjIdentifier");
 
-            X509Certificate2Collection fcollection = (X509Certificate2Collection)store.Certificates.
-                Find(X509FindType.FindByTimeValid, DateTime.Now, false);
+            X509Store store = new X509Store(storeLocation);
+            store.Open(OpenFlags.ReadOnly);
+            X509Certificate2Collection certCollection = store.Certificates;
+            X509Certificate2 x509 = null;
 
-            foreach (var cert in fcollection)
-                if (cert.SerialNumber.Equals(sn))
-                    return cert;
+            string SerialNumber = String.Empty;
+            string IssuerName = String.Empty;
+
+            X509IssuerSerial issuerSerial;
+
+            if (subjIdentifier.Type == SubjectIdentifierType.IssuerAndSerialNumber)
+            {
+                issuerSerial = (X509IssuerSerial)subjIdentifier.Value;
+            }
+
+            foreach (X509Certificate2 c in certCollection)
+            {
+                if (c.SerialNumber == issuerSerial.SerialNumber && c.Issuer == issuerSerial.IssuerName)
+                {
+                    x509 = c;
+                    break;
+                }
+            }
 
             store.Close();
-            return null;
+            return x509;
         }
     }
 

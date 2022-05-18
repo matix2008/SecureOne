@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Security.Cryptography.X509Certificates;
 using SecureOneLib;
-using SecureOneLib.Utilities;
 
 namespace SecureOne
 {
@@ -76,7 +75,6 @@ namespace SecureOne
             // Открываем диалог выбора каталога
             if (folderBrowserDialog.ShowDialog(this) == DialogResult.OK)
             {
-                //TODO: Сохраняем настройку рабочего каталога
                 OwnerWorkingFolder = folderBrowserDialog.SelectedPath;
                 workingFolderTextBox.Text = OwnerWorkingFolder;
             }

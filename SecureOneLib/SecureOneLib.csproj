@@ -72,11 +72,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Crypto\ISigner.cs" />
-    <Compile Include="Crypto\MySigner.cs" />
     <Compile Include="Crypto\Coder.cs" />
-    <Compile Include="Crypto\SessionKey.cs" />
-    <Compile Include="Crypto\Signer.cs" />
+    <Compile Include="SOState.cs" />
     <Compile Include="Utilities\CertificateWrapper.cs" />
     <Compile Include="Utilities\FileWrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -1,16 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
-using System.Security.Cryptography.Pkcs;
 using System.IO;
-using System.Formats.Asn1;
-using SecureOneLib.Crypto;
 
-namespace SecureOneLib.Utilities
+namespace SecureOneLib
 {
     /// <summary>
     /// Реализует обертку над абстрактным файлом
@@ -86,6 +78,20 @@ namespace SecureOneLib.Utilities
             return requisites.ToArray();
         }
 
+        public FileStream OpenRead()
+        {
+            return File.OpenRead(FilePathString);
+        }
+
+        public byte[] ReadAllBytes()
+        {
+            return File.ReadAllBytes(FilePathString);
+        }
+
+        public FileStream OpenWrite(string ext, bool createnew = false)
+        {
+            return new FileStream(FilePathString + ext, (createnew) ? FileMode.CreateNew : FileMode.Create);
+        }
     }
 
     public class PackageWrapper : FileWrapper

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Windows.Forms;
 using System.Security.Cryptography.X509Certificates;
 using SecureOneLib;
-using SecureOneLib.Utilities;
 
 namespace SecureOne
 {

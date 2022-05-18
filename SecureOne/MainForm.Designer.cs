@@ -47,6 +47,7 @@
             this.fileInfolistBox = new System.Windows.Forms.ListBox();
             this.statusStrip = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
+            this.toolStripProgressBar = new System.Windows.Forms.ToolStripProgressBar();
             this.mainMenuStrip.SuspendLayout();
             this.statusStrip.SuspendLayout();
             this.SuspendLayout();
@@ -219,7 +220,8 @@
             // statusStrip
             // 
             this.statusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.toolStripStatusLabel});
+            this.toolStripStatusLabel,
+            this.toolStripProgressBar});
             this.statusStrip.Location = new System.Drawing.Point(0, 619);
             this.statusStrip.Name = "statusStrip";
             this.statusStrip.Size = new System.Drawing.Size(1214, 22);
@@ -231,6 +233,14 @@
             this.toolStripStatusLabel.Name = "toolStripStatusLabel";
             this.toolStripStatusLabel.Size = new System.Drawing.Size(38, 17);
             this.toolStripStatusLabel.Text = "Готов";
+            // 
+            // toolStripProgressBar
+            // 
+            this.toolStripProgressBar.Name = "toolStripProgressBar";
+            this.toolStripProgressBar.Size = new System.Drawing.Size(200, 16);
+            this.toolStripProgressBar.Step = 1;
+            this.toolStripProgressBar.Style = System.Windows.Forms.ProgressBarStyle.Marquee;
+            this.toolStripProgressBar.Visible = false;
             // 
             // MainForm
             // 
@@ -251,6 +261,7 @@
             this.MinimumSize = new System.Drawing.Size(1230, 680);
             this.Name = "MainForm";
             this.Text = "SecureOne";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
             this.Load += new System.EventHandler(this.MainForm_Load);
             this.Shown += new System.EventHandler(this.MainForm_Shown);
             this.mainMenuStrip.ResumeLayout(false);
@@ -283,6 +294,7 @@
         private System.Windows.Forms.ToolStripMenuItem aboutToolStripMenuItem;
         private System.Windows.Forms.StatusStrip statusStrip;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel;
+        private System.Windows.Forms.ToolStripProgressBar toolStripProgressBar;
     }
 }
 
