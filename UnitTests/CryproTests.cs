@@ -4,7 +4,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using SecureOneLib.Crypto;
+using SecureOneLib;
 
 namespace UnitTests
 {

@@ -8,7 +8,6 @@ using System.Security;
 using System.Windows.Forms;
 using System.ComponentModel;
 using SecureOneLib;
-using SecureOneLib.Crypto;
 using System.Security.Cryptography;
 
 namespace SecureOne
@@ -141,7 +140,7 @@ namespace SecureOne
         /// <summary>
         /// Начинает асихронную операцию расшифровки
         /// </summary>
-        public bool StartDecrypt(PackageWrapper ipw, string ofn, CertificateWrapper recipientCert)
+        public bool StartDecrypt(PackageWrapper ipw, CertificateWrapper recipientCert)
         {
             if (CheckNotBusy())
             {
@@ -151,7 +150,7 @@ namespace SecureOne
                     _inputFileWrapper = ipw;
                     _signerCertificate = null;
                     _recipientCertificate = recipientCert;
-                    _fileName = ofn;
+                    _fileName = ipw.GetNativeFilePath();
                 }
 
                 RunWorkerAsync();
@@ -164,7 +163,7 @@ namespace SecureOne
         /// <summary>
         /// Начинает асихронную операцию проверки присоединенной подписи
         /// </summary>
-        public bool StartVerifyEncode(PackageWrapper ipw, string ofn)
+        public bool StartVerifyEncode(PackageWrapper ipw)
         {
             if (CheckNotBusy())
             {
@@ -174,7 +173,7 @@ namespace SecureOne
                     _inputFileWrapper = ipw;
                     _signerCertificate = null;
                     _recipientCertificate = null;
-                    _fileName = ofn;
+                    _fileName = ipw.GetNativeFilePath();
                 }
 
                 RunWorkerAsync();
@@ -257,8 +256,9 @@ namespace SecureOne
                         else
                             return;
                     }   
-                    catch(Exception)
+                    catch(Exception ex)
                     {
+                        logger.Error(ex, ex.Message);
                         throw;
                     }
                 }
@@ -271,135 +271,50 @@ namespace SecureOne
         /// <returns>Список созданных артефактов</returns>
         protected PackageWrapper[] Encrypt()
         {
-            // Инициализируем объект-состоянение
-            SOState sos = new SOState();
-
-            // Лямбда для оповещения о состоянии
-            Action<SOState.CryptoState, string> _report = (state, message) =>
-            {
-                logger.Info(message);
-
-                sos.State = state;
-                sos.Message = message;
-
-                ReportProgress(0, sos);
-            };
-
-            // Короткая лямбда
-            Action<string> report = message => _report(SOState.CryptoState.InProgress, message);
-            Action<string> log = message => logger.Info(message);
+            Action<SOState.CryptoState, string> _report = (state, message)
+                => Report(SOState.Create(state, message));
 
             _report(SOState.CryptoState.Start, $"Начинаем шифрование и подпись файла: {_inputFileWrapper}");
 
             List<PackageWrapper> opwlst = new List<PackageWrapper>();
 
-            using (FileStream ifs = _inputFileWrapper.OpenRead())
+            try
             {
-                try
+                // очищаем память
+                GC.Collect();
+
+                // Если мы должны использовать собственный формат или размер данных потока больше или равно 2 ^ 32
+                if (_customEncryptionFormat || _inputFileWrapper.FInfo.Length > Int32.MaxValue)
+                    throw new OutOfMemoryException();   // генерируем исключение
+
+                opwlst.Add(new PackageWrapper(_inputFileWrapper.SignEncrypt(_signerCertificate, _recipientCertificate)));
+            }
+            catch (Exception ex)
+            {
+                // очищаем память
+                GC.Collect();
+
+                if (ex is OutOfMemoryException ||
+                    (ex is CryptographicException && ((uint)ex.HResult) == 0x80093106))
                 {
-                    // очищаем память
-                    GC.Collect();
+                    // Шифруем в своем формате
 
-                    // Если мы должны использовать собственный формат или размер данных потока больше или равно 2 ^ 32
-                    if (_customEncryptionFormat || ifs.Length > Int32.MaxValue)
-                        throw new OutOfMemoryException();   // генерируем исключение
+                    if (_customEncryptionFormat)
+                        logger.Info("Шифруем в собственном формате");
+                    else
+                        logger.Info($"Файл: {_inputFileWrapper} слишком большой: {_inputFileWrapper.FInfo.Length}. Шифруем в собственном формате");
 
-                    // Пытаемся аллоцировать буффер нужного размера
-                    byte[] buffer = new byte[ifs.Length];
-
-                    // Читаем данные в буффер
-                    ifs.Read(buffer, 0, (int)ifs.Length);
-
-                    // ссылка на шифрованный массив байтов
-                    byte[] carr = null;
+                    // Добавляем шифрованный файл в список
+                    opwlst.Add(new PackageWrapper(_inputFileWrapper.Encrypt(_recipientCertificate)));
 
                     if (_signerCertificate != null)
                     {
-                        log("Указан сертификат владельца - шифруем и подписываем");
+                        logger.Info("Указан сертификат владельца - формируем отсоединенную подпись");
 
-                        carr = Coder.SignEncrypt(buffer, _recipientCertificate.Value, _signerCertificate.Value);
-
-                        log($"Сохраняем шифрованные данные в файл: {_inputFileWrapper + ".p7sm"}");
-
-                        // Сохраняем шифрованные и подписанные данные в файл CMS / PKCS#7
-                        using (FileStream ofs = _inputFileWrapper.OpenWrite(".p7sm"))
-                        {
-                            ofs.Write(carr, 0, carr.Length);
-                        }
-
-                        opwlst.Add(new PackageWrapper(_inputFileWrapper + ".p7sm"));
-                    }
-                    else
-                    {
-                        log("Сертификат владельца не указан - не подписываем. Только шифруем");
-
-                        // Шифруем и подписываем
-                        carr = Coder.Encrypt(buffer, _recipientCertificate.Value);
-
-                        log($"Сохраняем шифрованные данные в файл: {_inputFileWrapper + ".p7m"}");
-
-                        // Сохраняем шифрованные данные в файл CMS / PKCS#7
-                        using (FileStream ofs = _inputFileWrapper.OpenWrite(".p7m"))
-                        {
-                            ofs.Write(carr, 0, carr.Length);
-                        }
-
-                        opwlst.Add(new PackageWrapper(_inputFileWrapper + ".p7m"));
+                        opwlst.Add(new PackageWrapper(_inputFileWrapper.Sign(_signerCertificate,true)));
                     }
                 }
-                catch (Exception ex)
-                {
-                    // очищаем память
-                    GC.Collect();
-
-                    if (ex is OutOfMemoryException ||
-                        (ex is CryptographicException && ((uint)ex.HResult) == 0x80093106))
-                    {
-                        // Шифруем в своем формате
-
-                        if (_customEncryptionFormat)
-                            log($"Шифруем в собственном формате");
-                        else
-                            log($"Файл: {_inputFileWrapper} слишком большой: {ifs.Length}. Шифруем в собственном формате");
-
-                        // Сохраняем шифрованные данные в файл
-                        using (FileStream ofs = _inputFileWrapper.OpenWrite(".enc"))
-                        {
-                            log($"Шифруем и сохраняем шифрованные данные в файл: {_inputFileWrapper + ".enc"}");
-
-                            // Восстанавливаем позицию потока в начало
-                            ifs.Position = 0;
-
-                            // Шифруем и сохраняем данные в выходной поток
-                            Coder.Encrypt(ifs, ofs, _recipientCertificate.Value);
-                        }
-
-                        // Добавляем шифрованный файл в список
-                        opwlst.Add(new PackageWrapper(_inputFileWrapper + ".enc"));
-
-                        if (_signerCertificate != null)
-                        {
-                            log("Указан сертификат владельца - формируем отсоединенную подпись");
-
-                            // Восстанавливаем позицию потока в начало
-                            ifs.Position = 0;
-
-                            // Формируем отсоединенную подпись
-                            byte[] sign = Coder.SignDetached(ifs, _signerCertificate.Value);
-
-                            log($"Сохраняем данные подписи в файл: {_inputFileWrapper + ".sig"}");
-
-                            // Сохраняем данные подписи в файл CMS / PKCS#7
-                            using (FileStream ofs = _inputFileWrapper.OpenWrite(".sig"))
-                            {
-                                ofs.Write(sign, 0, sign.Length);
-                            }
-
-                            opwlst.Add(new PackageWrapper(_inputFileWrapper + ".sig"));
-                        }
-                    }
-                    else throw;
-                }
+                else throw;
             }
 
             _report( SOState.CryptoState.Completed, $"Шифрование и подпись файла успешно завершены. Файл: {_inputFileWrapper}");
@@ -412,80 +327,45 @@ namespace SecureOne
         /// <returns>Созданный артефакт</returns>
         protected PackageWrapper Sign()
         {
-            // Инициализируем объект-состоянение
-            SOState sos = new SOState();
-
-            // Лямбда для оповещения о состоянии
-            Action<SOState.CryptoState, string> _report = (state, message) =>
-            {
-                logger.Info(message);
-
-                sos.State = state;
-                sos.Message = message;
-
-                ReportProgress(0, sos);
-            };
-
-            // Короткая лямбда
-            Action<string> report = message => _report(SOState.CryptoState.InProgress, message);
-            Action<string> log = message => logger.Info(message);
+            Action<SOState.CryptoState, string> _report = (state, message)
+                => Report(SOState.Create(state, message));
 
             _report(SOState.CryptoState.Start, $"Подписываем файл: {_inputFileWrapper}");
 
-            PackageWrapper opw = null;
-            using (FileStream ifs = _inputFileWrapper.OpenRead())
+            string filename = String.Empty;
+
+            try
             {
-                string ext = ".p7s";
-                byte[] sign = null;
+                // очищаем память
+                GC.Collect();
 
-                try
+                // Если мы должны сформировать присоединенную подпись или размер данных потока больше или равно 2 ^ 32
+                if (_forсeDetachedSign || _inputFileWrapper.FInfo.Length > Int32.MaxValue)
+                    throw new OutOfMemoryException();   // генерируем исключение
+
+                logger.Info("Формируем присоединенную подпись");
+
+                filename = _inputFileWrapper.Sign(_signerCertificate, false);
+
+            }
+            catch (Exception ex)
+            {
+                // очищаем память
+                GC.Collect();
+
+                if (ex is OutOfMemoryException ||
+                    (ex is System.Security.Cryptography.CryptographicException && ((uint)ex.HResult) == 0x80093106))
                 {
-                    // очищаем память
-                    GC.Collect();
+                    logger.Info("Формируем отсоединенную подпись");
 
-                    // Если мы должны сформировать присоединенную подпись или размер данных потока больше или равно 2 ^ 32
-                    if (_forсeDetachedSign || ifs.Length > Int32.MaxValue)
-                        throw new OutOfMemoryException();   // генерируем исключение
-
-                    // Пытаемся аллоцировать буфер нужной длины
-                    byte[] buffer = new byte[ifs.Length];
-                    // Читаем данные в буффер
-                    ifs.Read(buffer, 0, (int)ifs.Length);
-
-                    log($"Формируем присоединенную подпись");
-
-                    sign = Coder.SignAttached(buffer, _signerCertificate.Value);
+                    filename = _inputFileWrapper.Sign(_signerCertificate, true);
                 }
-                catch (Exception ex)
-                {
-                    // очищаем память
-                    GC.Collect();
-
-                    if (ex is OutOfMemoryException ||
-                        (ex is System.Security.Cryptography.CryptographicException && ((uint)ex.HResult) == 0x80093106))
-                    {
-                        log($"Формируем отсоединенную подпись");
-
-                        // Если мы тут формируем отсоединенную подпись
-                        sign = Coder.SignDetached(ifs, _signerCertificate.Value);
-                        ext = ".sig";
-                    }
-                    else throw;
-                }
-
-                log($"Сохраняем данные подписи в файл: {_inputFileWrapper + ext}");
-
-                // Сохраняем данные подписи в файл CMS / PKCS#7
-                using (FileStream ofs = _inputFileWrapper.OpenWrite(ext))
-                {
-                    ofs.Write(sign, 0, sign.Length);
-                }
-
-                opw = new PackageWrapper(_inputFileWrapper + ext);
+                else throw;
             }
 
             _report(SOState.CryptoState.Completed, $"Подпись файла: {_inputFileWrapper} сформирована");
-            return opw;
+
+            return new PackageWrapper(filename);
         }
 
         /// <summary>
@@ -494,66 +374,18 @@ namespace SecureOne
         /// <returns>Имя файла</returns>
         protected string Decrypt()
         {
-            // Инициализируем объект-состоянение
-            SOState sos = new SOState();
-
-            // Лямбда для оповещения о состоянии
-            Action<SOState.CryptoState, string> _report = (state, message) =>
-            {
-                logger.Info(message);
-
-                sos.State = state;
-                sos.Message = message;
-
-                ReportProgress(0, sos);
-            };
-
-            // Короткая лямбда
-            Action<string> report = message => _report(SOState.CryptoState.InProgress, message);
-            Action<string> log = message => logger.Info(message);
+            Action<SOState.CryptoState, string> _report = (state, message)
+                => Report(SOState.Create(state, message));
 
             // очищаем память
             GC.Collect();
 
-            _report(SOState.CryptoState.Start, $"Расшифровка и проверка подписи файла: {_inputFileWrapper}");
+            _report(SOState.CryptoState.Start, $"Расшифровка и проверка файла: {_inputFileWrapper}");
 
-            // Здесь именно FileMode = CreateNew, т.к. файл с данными уже может существовать  с тем же именем
-            using (FileStream ofs = new FileStream(_fileName, FileMode.CreateNew))
-            {
-                if (((PackageWrapper)_inputFileWrapper).Type == PackageWrapper.PackageType.ENC)
-                {
-                    // Если мы тут, значит это шифрованный файл собственного формата
-                    using (FileStream ifs = _inputFileWrapper.OpenRead())
-                    {
-                        log($"Рассшифровываем и сохраняем данные в файл: {_fileName}");
-                        
-                        // Расшифровываем его и сохраняем расшифрованные данные в файл
-                        Coder.Decrypt(ifs, ofs, _recipientCertificate.Value);
-                    }
-                }
-                else
-                {
-                    log($"Читаем в массив данные файла и расшифровываем его: {_inputFileWrapper}");
+            ((PackageWrapper)_inputFileWrapper).Decrypt(_recipientCertificate);
 
-                    // Если мы тут, значит это p7m или p7sm файл
-                    byte[] encdata = _inputFileWrapper.ReadAllBytes();
+            _report(SOState.CryptoState.Completed, "Расшифровка и проверка файла завершены");
 
-                    byte[] decrypted = ((PackageWrapper)_inputFileWrapper).Type == PackageWrapper.PackageType.P7M 
-                        ? Coder.Decrypt(encdata) : Coder.VerifyDecrypt(encdata);
-
-                    //if (((PackageWrapper)_inputFileWrapper).Type == PackageWrapper.PackageType.P7M)
-                    //    decrypted = Coder.Decrypt(encdata); // Расшифровываем
-                    //else
-                    //    decrypted = Coder.VerifyDecrypt(encdata);   // Проверяем и расшифровываем
-
-                    log($"Сохраняем расшифрованные данные в файл: {_fileName}");
-
-                    // Сохраняем расшифрованные данные в файл
-                    ofs.Write(decrypted, 0, decrypted.Length);
-                }
-            }
-
-            _report(SOState.CryptoState.Completed, "Расшифровка и проверка подписи файла завершены");
             return _fileName;
         }
 
@@ -562,44 +394,25 @@ namespace SecureOne
         /// </summary>
         protected bool Verify()
         {
-            // Инициализируем объект-состоянение
-            SOState sos = new SOState();
-
-            // Лямбда для оповещения о состоянии
-            Action<SOState.CryptoState, string> _report = (state, message) =>
-            {
-                logger.Info(message);
-
-                sos.State = state;
-                sos.Message = message;
-
-                ReportProgress(0, sos);
-            };
-
-            // Короткая лямбда
-            Action<string> report = message => _report(SOState.CryptoState.InProgress, message);
-            Action<string> log = message => logger.Info(message);
+            Action<SOState.CryptoState, string> _report = (state, message) 
+                => Report(SOState.Create(state, message));
 
             // очищаем память
             GC.Collect();
 
-            _report(SOState.CryptoState.Start, $"Проверка подписи файла: {_inputFileWrapper}");
+            PackageWrapper pw = _inputFileWrapper as PackageWrapper;
+
+            _report(SOState.CryptoState.Start, $"Проверка отсоединенной подписи файла: {_inputFileWrapper}");
 
             try
             {
-                // Читаем данные подписи
-                byte[] sign = _inputFileWrapper.ReadAllBytes();
-
                 System.Diagnostics.Debug.Assert(_fileName.Length > 0);
 
-                // Открываем и читаем данные файла для проверки подписи
-                using (FileStream ifs = File.OpenRead(_fileName))
-                {
-                    log($"Начинаем проверку отсоединенной подписи");
-                    Coder.Verify(sign, ifs);
-                }
+                // Проверяем отсоединенную подпись для файла _fileName
+                pw.Verify(_fileName);
 
                 _report(SOState.CryptoState.Completed, $"Подпись файла {_inputFileWrapper} успешно проверена");
+
                 return true;
             }
             catch (CryptographicException ex)
@@ -620,43 +433,23 @@ namespace SecureOne
         /// <returns>В случае успешной проверки имя файла.</returns>
         protected string VerifyEncode()
         {
-            // Инициализируем объект-состоянение
-            SOState sos = new SOState();
-
-            // Лямбда для оповещения о состоянии
-            Action<SOState.CryptoState, string> _report = (state, message) =>
-            {
-                logger.Info(message);
-
-                sos.State = state;
-                sos.Message = message;
-
-                ReportProgress(0, sos);
-            };
-
-            // Короткая лямбда
-            Action<string> report = message => _report(SOState.CryptoState.InProgress, message);
-            Action<string> log = message => logger.Info(message);
+            Action<SOState.CryptoState, string> _report = (state, message)
+                => Report(SOState.Create(state, message));
 
             // очищаем память
             GC.Collect();
 
+            PackageWrapper pw = _inputFileWrapper as PackageWrapper;
+
             _report(SOState.CryptoState.Start, $"Проверка присоединенной подписи файла: {_inputFileWrapper}");
 
-            byte[] sign = _inputFileWrapper.ReadAllBytes();
             try
             {
-                log($"Начинаем проверку присоединенной подписи");
-
-                byte[] decoded = Coder.Verify(sign);
+                // Проверяем присоeдиненную подпись и записываем подписанные данные в отдельный файл _fileName
+                // Здесь именно CreateNew = true, т.к. файл с данными уже может существовать  с тем же именем
+                FileWrapper.Write(pw.Verify(), _fileName, true);
 
                 _report(SOState.CryptoState.Completed, $"Подпись файла {_inputFileWrapper} успешно проверена");
-
-                // Здесь именно FileMode = CreateNew, т.к. файл с данными уже может существовать  с тем же именем
-                using (FileStream ofs = new FileStream(_fileName, FileMode.CreateNew))
-                {
-                    ofs.Write(decoded, 0, decoded.Length);
-                }
 
                 return _fileName;
             }
@@ -677,23 +470,8 @@ namespace SecureOne
         /// </summary>
         public bool CheckIncorrectSettings()
         {
-            // Инициализируем объект-состоянение
-            SOState _sos = new SOState();
-
-            // Лямбда для оповещения о состоянии
-            Action<SOState.CryptoState, string> _report = (state, message) =>
-            {
-                logger.Info(message);
-
-                _sos.State = state;
-                _sos.Message = message;
-
-                ReportProgress(0, _sos);
-            };
-
-            // Короткая лямбда
-            Action<string> report = message => _report(SOState.CryptoState.InProgress, message);
-            Action<string> log = message => logger.Info(message);
+            Action<SOState.CryptoState, string> _report = (state, message)
+                => Report(SOState.Create(state, message));
 
             _report(SOState.CryptoState.Start, "Проверка корректности настроек системы");
 
@@ -702,7 +480,9 @@ namespace SecureOne
             if (_settings.OwnerWorkingFolder.Length == 0 || !Directory.Exists(_settings.OwnerWorkingFolder))
             {
                 _settings.OwnerWorkingFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                log($"Установлено новое значение рабочего каталога: {_settings.OwnerWorkingFolder}");
+
+                logger.Info($"Установлено новое значение рабочего каталога: {_settings.OwnerWorkingFolder}");
+
                 result = false;
             }
 
@@ -711,13 +491,21 @@ namespace SecureOne
                 if (!_settings.OwnerCertificate.Value.HasPrivateKey || !_settings.OwnerCertificate.Value.Verify())
                 {
                     _settings.OwnerCertificate = null;
-                    log($"Сертификат владельца отозван или истек его срока действия.");
+
+                    logger.Info("Сертификат владельца отозван или истек его срока действия.");
+
                     result = false;
                 }
             }
 
             _report(SOState.CryptoState.Completed, "Проверка настроек закончена");
             return result;
+        }
+
+        protected void Report(SOState state)
+        {
+            logger.Info(state.Message);
+            ReportProgress(0, state);
         }
     }
 }

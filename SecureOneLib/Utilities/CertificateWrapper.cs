@@ -90,26 +90,6 @@ namespace SecureOneLib
             store.Close();
             return null;
         }
-        ///// <summary>
-        ///// Ищет сертификат по подстроке в названии субъекта
-        ///// </summary>
-        ///// <param name="sn">Серийный номер</param>
-        ///// <returns>Сертификат или null</returns>
-        //public static X509Certificate2 FindCertificateBySN(string sn)
-        //{
-        //    X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
-        //    store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
-
-        //    X509Certificate2Collection fcollection = (X509Certificate2Collection)store.Certificates.
-        //        Find(X509FindType.FindByTimeValid, DateTime.Now, false);
-
-        //    foreach (var cert in fcollection)
-        //        if (cert.SerialNumber.Equals(sn))
-        //            return cert;
-
-        //    store.Close();
-        //    return null;
-        //}
 
         public static X509Certificate2 FindCertificateBySubjectIdentifier(StoreLocation storeLocation, SubjectIdentifier subjIdentifier)
         {

@@ -262,9 +262,6 @@ namespace SecureOne
                 PackageWrapper ipw = encodedDataListBox.Items[encodedDataListBox.SelectedIndex] as PackageWrapper;
                 System.Diagnostics.Debug.Assert(ipw.Type != PackageWrapper.PackageType.Unknown);
 
-                // получаем имя файла для расшифровки и проверки данных
-                string ofn = ipw.GetNativeFilePath();
-
                 if (ipw.Type == PackageWrapper.PackageType.ENC ||
                     ipw.Type == PackageWrapper.PackageType.P7M ||
                     ipw.Type == PackageWrapper.PackageType.P7SM)
@@ -276,12 +273,12 @@ namespace SecureOne
                     }
 
                     StartReporting();
-                    _backgroundCryptoWorker.StartDecrypt(ipw, ofn, _options.OwnerCertificate);
+                    _backgroundCryptoWorker.StartDecrypt(ipw, _options.OwnerCertificate);
                 }
                 else if (ipw.Type == PackageWrapper.PackageType.P7S)
                 {
                     StartReporting();
-                    _backgroundCryptoWorker.StartVerifyEncode(ipw, ofn);
+                    _backgroundCryptoWorker.StartVerifyEncode(ipw);
                 }
                 else 
                 {
@@ -295,7 +292,7 @@ namespace SecureOne
                     openFileDialog.FilterIndex = 1;
                     openFileDialog.RestoreDirectory = true;
                     openFileDialog.Multiselect = false;
-                    openFileDialog.FileName = ofn;
+                    openFileDialog.FileName = "";
                     openFileDialog.Title = "Загрузите файл данных для которого была сформирована подпись.";
 
                     if (openFileDialog.ShowDialog() != DialogResult.OK)
@@ -348,7 +345,9 @@ namespace SecureOne
             }
             else if (e.Error != null)
             {
-                Utils.MessageHelper.Error(this, $"Произошла фатальная ошибка: {e.Error}");
+                Utils.MessageHelper.Error(this, $"Произошла фатальная ошибка: {e.Error.Message}");
+
+                logger.Info(e.Error);
             }
             else
             {
@@ -363,14 +362,17 @@ namespace SecureOne
                         AddPackages(e.Result as PackageWrapper);
                         Utils.MessageHelper.Info(this, "Операция успешна завершена");
                         break;
+
                     case BackgroundCryptoWorker.AsyncCryptoOpration.SignEncrypt:
                         AddPackages(e.Result as PackageWrapper[]);
                         Utils.MessageHelper.Info(this, "Операция успешна завершена");
                         break;
+
                     case BackgroundCryptoWorker.AsyncCryptoOpration.Decrypt:
                         if (Utils.MessageHelper.QuestionYN(this, "Файл успешно проверен и расшифрован. Открыть расшифрованный файл?") == DialogResult.Yes)
                             System.Diagnostics.Process.Start(e.Result as string);
                         break;
+
                     case BackgroundCryptoWorker.AsyncCryptoOpration.VerifyEncode:
                         {
                             string filename = e.Result as string;
@@ -381,12 +383,14 @@ namespace SecureOne
                                 System.Diagnostics.Process.Start(e.Result as string);
                         }
                         break;
+
                     case BackgroundCryptoWorker.AsyncCryptoOpration.Verify:
                         if (((bool)e.Result))
                             Utils.MessageHelper.Info(this, "Подпись верна!");
                         else
                             Utils.MessageHelper.Warning(this, "Подпись не верна!");
                         break;
+
                     case BackgroundCryptoWorker.AsyncCryptoOpration.CheckSettigs:
                         if (!_options.CheckRequiredFieldsAreFilled())
                         {
@@ -462,319 +466,6 @@ namespace SecureOne
             encodedDataListBox.Items.AddRange(pwarr);
             verifyDecryptButton.Enabled = true;
         }
-
-        ///// <summary>
-        ///// Шифрует файл на случайном симметричном ключе, зашированном в свою очередь на ассиметричном ключе сертификата. 
-        ///// Если указан сертификат подписанта, то формирует электронную подпись
-        ///// </summary>
-        ///// <remarks>
-        ///// Зашифрованный файл добавляет соответствующее расширение к полному имени исходного файла:
-        ///// file.ext.p7sm - шифрованные и подписанные данные в файл CMS / PKCS#7
-        ///// file.ext.p7m - шифрованные данные в файл CMS / PKCS#7
-        ///// file.ext.enc - шифрованные данные в формате SecureOne
-        ///// file.ext.sig - отсоединенная подпись в формате CMS / PKCS#7
-        ///// </remarks>
-        ///// <param name="ifw">Ссылка на обертку шифруемого файла</param>
-        ///// <param name="recipientCert">Ссылка на обертку для сертификата получателя</param>
-        ///// <param name="signerCert">Ссылка на обертку для сертификата подписывающего. Если null, подпись не формируется</param>
-        ///// <param name="cfrmt">Если true, функция всегда ширует файл в формате SecureOne. 
-        ///// Если false, функция пытается создать шифрованный CMS / PKCS7 контейнер, если памяти недостаточно шифрует в формате SecureOne.</param>
-        //[SecuritySafeCritical]
-        //protected PackageWrapper[] Encrypt(FileWrapper ifw, CertificateWrapper recipientCert, CertificateWrapper signerCert, bool cfrmt = false)
-        //{
-        //    Reporter($"Начинаем шифрование и подпись файла: {ifw.FilePathString}");
-
-        //    List<PackageWrapper> opwlst = new List<PackageWrapper>();
-
-        //    using (FileStream ifs = File.OpenRead(ifw.FilePathString))
-        //    {
-        //        try
-        //        {
-        //            // очищаем память
-        //            GC.Collect();
-
-        //            // Если мы должны использовать собственный формат или размер данных потока больше или равно 2 ^ 32
-        //            if (cfrmt || ifs.Length > Int32.MaxValue)
-        //                throw new OutOfMemoryException();   // генерируем исключение
-
-        //            // Пытаемся аллоцировать буффер нужного размера
-        //            byte[] buffer = new byte[ifs.Length];
-                    
-        //            // Читаем данные в буффер
-        //            ifs.Read(buffer, 0, (int)ifs.Length);
-
-        //            // ссылка на шифрованный массив байтов
-        //            byte[] carr = null;
-
-        //            if (signerCert != null)
-        //            {
-        //                Reporter("Указан сертификат владельца - шифруем и подписываем");
-
-        //                carr = Coder.SignEncrypt(buffer, recipientCert.Value, signerCert.Value);
-
-        //                Reporter($"Сохраняем шифрованные данные в файл: {ifw.FilePathString + ".p7sm"}");
-
-        //                // Сохраняем шифрованные и подписанные данные в файл CMS / PKCS#7
-        //                using (FileStream ofs = new FileStream(ifw.FilePathString + ".p7sm", FileMode.CreateNew))
-        //                {
-        //                    ofs.Write(carr, 0, carr.Length);
-        //                }
-
-        //                opwlst.Add(new PackageWrapper(ifw.FilePathString + ".p7sm"));
-        //            }
-        //            else
-        //            {
-        //                Reporter("Сертификат владельца не указан - не подписываем. Только шифруем");
-
-        //                // Шифруем и подписываем
-        //                carr = Coder.Encrypt(buffer, recipientCert.Value);
-
-        //                Reporter($"Сохраняем шифрованные данные в файл: {ifw.FilePathString + ".p7m"}");
-        //                // Сохраняем шифрованные данные в файл CMS / PKCS#7
-        //                using (FileStream ofs = new FileStream(ifw.FilePathString + ".p7m", FileMode.CreateNew))
-        //                {
-        //                    ofs.Write(carr, 0, carr.Length);
-        //                }
-
-        //                opwlst.Add(new PackageWrapper(ifw.FilePathString + ".p7m"));
-        //            }
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            // очищаем память
-        //            GC.Collect();
-
-        //            if (ex is OutOfMemoryException ||
-        //                (ex is System.Security.Cryptography.CryptographicException && ((uint)ex.HResult) == 0x80093106))
-        //            {
-        //                // Шифруем в своем формате
-
-        //                if (cfrmt)
-        //                    Reporter($"Шифруем в собственном формате");
-        //                else
-        //                    Reporter($"Файл: {ifw.FilePathString} слишком большой: {ifs.Length}. Шифруем в собственном формате");
-
-        //                // Сохраняем шифрованные данные в файл
-        //                using (FileStream ofs = new FileStream(ifw.FilePathString + ".enc", FileMode.CreateNew))
-        //                {
-        //                    Reporter($"Шифруем и сохраняем шифрованные данные в файл: {ifw.FilePathString + ".enc"}");
-
-        //                    // Восстанавливаем позицию потока в начало
-        //                    ifs.Position = 0;
-
-        //                    // Шифруем и сохраняем данные в выходной поток
-        //                    Coder.Encrypt(ifs, ofs, recipientCert.Value);
-        //                }
-
-        //                // Добавляем шифрованный файл в список
-        //                opwlst.Add(new PackageWrapper(ifw.FilePathString + ".enc"));
-
-        //                if (signerCert != null)
-        //                {
-        //                    Reporter("Указан сертификат владельца - формируем отсоединенную подпись");
-
-        //                    // Восстанавливаем позицию потока в начало
-        //                    ifs.Position = 0;
-
-        //                    // Формируем отсоединенную подпись
-        //                    byte[] sign = Coder.SignDetached(ifs, signerCert.Value);
-
-        //                    Reporter($"Сохраняем данные подписи в файл: {ifw.FilePathString + ".sig"}");
-
-        //                    // Сохраняем данные подписи в файл CMS / PKCS#7
-        //                    using (FileStream ofs = new FileStream(ifw.FilePathString + ".sig", FileMode.CreateNew))
-        //                    {
-        //                        ofs.Write(sign, 0, sign.Length);
-        //                    }
-
-        //                    opwlst.Add(new PackageWrapper(ifw.FilePathString + ".sig"));
-        //                }
-        //            }
-        //            else throw;
-        //        }
-        //    }
-
-        //    Reporter($"Шифрование и подпись файла успешно завершены. Файл: {ifw.FilePathString}");
-        //    return opwlst.ToArray();
-        //}
-
-        ///// <summary>
-        ///// Расшифровывает файл на сертификате получателя. В случае если контейнер содержит подпись - проверяет ее.
-        ///// </summary>
-        ///// <remarks>
-        ///// <para>
-        ///// 1. Процедура работает с файлами .p7sm, .p7m, .enc.
-        ///// </para>
-        ///// <para>
-        ///// 2. Файл указанный в параметре ofpath не должен существовать. В противном случае возникнет исключение IOException.
-        ///// </para>
-        ///// </remarks>
-        ///// <param name="pw">Ссылка на файл контейнера</param>
-        ///// <param name="ofpath">Путь к файлу с расшифрованными данными</param>
-        ///// <param name="recipientCert">Ссылка на обертку для сертификата получателя</param>
-        //[SecuritySafeCritical]
-        //protected void Decrypt(PackageWrapper pw, string ofpath, CertificateWrapper recipientCert)
-        //{
-        //    // очищаем память
-        //    GC.Collect();
-
-        //    Reporter($"Начинаем проверку подписи файла и его расшифровку: {pw.FilePathString}");
-
-        //    Reporter($"Создаем новый файл для расшифрованных данных: {ofpath}");
-        //    using (FileStream ofs = new FileStream(ofpath, FileMode.CreateNew))
-        //    {
-        //        if (pw.Type == PackageWrapper.PackageType.ENC)
-        //        {
-        //            // Если мы тут, значит это шифрованный файл собственного формата
-        //            using (FileStream ifs = File.OpenRead(pw.FilePathString))
-        //            {
-        //                Reporter($"Рассшифровываем и сохраняем данные в файл: {ofpath}");
-        //                // Расшифровываем его и сохраняем расшифрованные данные в файл
-        //                Coder.Decrypt(ifs, ofs, recipientCert.Value);
-        //            }
-        //        }
-        //        else
-        //        {
-        //            Reporter($"Читаем в массив данные файла: {pw.FilePathString}");
-
-        //            // Если мы тут, значит это p7m или p7sm файл
-        //            byte[] encdata = File.ReadAllBytes(pw.FilePathString);
-
-        //            Reporter($"Рассшифровываем данные файла: {pw.FilePathString}");
-
-        //            byte[] decrypted = null;
-        //            // Расшифровываем
-        //            if (pw.Type == PackageWrapper.PackageType.P7M)
-        //                decrypted = Coder.Decrypt(encdata);
-        //            else
-        //                decrypted = Coder.VerifyDecrypt(encdata);
-
-        //            Reporter($"Сохраняем расшифрованные данные в файл: {ofpath}");
-
-        //            // Сохраняем расшифрованные данные в файл
-        //            ofs.Write(decrypted, 0, decrypted.Length);
-        //        }
-        //    }
-
-        //    Reporter($"Проверка подписи файла и его расшифровка успешна завершены: {pw.FilePathString}");
-        //}
-
-        ///// <summary>
-        ///// Формирует электронную подпись
-        ///// </summary>
-        ///// <remarks>
-        ///// <para>
-        ///// 1. Процедура создает присоединенную .p7s или отсоединенную .sig подписи.
-        ///// </para>
-        ///// <para>
-        ///// 2. Если параметр <paramref name="forсeDetached"/> = true - всегда создает отсоединенную подпись. Если false, пытается создать присоединенную, если не получается, тогда отсоединенную.
-        ///// <para>
-        ///// </remarks>
-        ///// <param name="fw">Ссылка на обертку подписываемого файла</param>
-        ///// <param name="signerCert">Ссылка на обертку сертификата подписанта</param>
-        ///// <param name="forсeDetached">Если true - всегда создает отсоединенную подпись.</param>
-        //[SecuritySafeCritical]
-        //protected PackageWrapper Sign(FileWrapper ifw, CertificateWrapper signerCert, bool forсeDetached = false)
-        //{
-        //    Reporter($"Начинаем подпись файла: {ifw.FilePathString}");
-
-        //    PackageWrapper opw = null;
-        //    using (FileStream ifs = File.OpenRead(ifw.FilePathString))
-        //    {
-        //        string ext = ".p7s";
-        //        byte[] sign = null;
-
-        //        try
-        //        {
-        //            // очищаем память
-        //            GC.Collect();
-
-        //            // Если мы должны сформировать присоединенную подпись или размер данных потока больше или равно 2 ^ 32
-        //            if (forсeDetached || ifs.Length > Int32.MaxValue)
-        //                throw new OutOfMemoryException();   // генерируем исключение
-
-        //            // Пытаемся аллоцировать буфер нужной длины
-        //            byte[] buffer = new byte[ifs.Length];
-        //            // Читаем данные в буффер
-        //            ifs.Read(buffer, 0, (int)ifs.Length);
-
-        //            Reporter($"Формируем присоединенную подпись");
-
-        //            sign = Coder.SignAttached(buffer, signerCert.Value);
-        //        }
-        //        catch(Exception ex)
-        //        {
-        //            // очищаем память
-        //            GC.Collect();
-
-        //            if (ex is OutOfMemoryException || 
-        //                (ex is System.Security.Cryptography.CryptographicException && ((uint)ex.HResult) == 0x80093106))
-        //            {
-        //                Reporter($"Формируем отсоединенную подпись");
-
-        //                // Если мы тут формируем отсоединенную подпись
-        //                sign = Coder.SignDetached(ifs, signerCert.Value);
-        //                ext = ".sig";
-        //            }
-        //            else throw;
-        //        }
-
-        //        Reporter($"Сохраняем данные подписи в файл: {ifw.FilePathString + ext}");
-
-        //        // Сохраняем данные подписи в файл CMS / PKCS#7
-        //        using (FileStream ofs = new FileStream(ifw.FilePathString + ext, FileMode.CreateNew))
-        //        {
-        //            ofs.Write(sign, 0, sign.Length);
-        //        }
-
-        //        opw = new PackageWrapper(ifw.FilePathString + ext);
-        //    }
-
-        //    Reporter($"Подпись файла: {ifw.FilePathString} успешно завершена");
-        //    return opw;
-        //}
-
-        ///// <summary>
-        ///// Проверяет верность электронной присоединенной или отсоединенной подписи в формате CMS / PKCS#7
-        ///// </summary>
-        ///// <param name="pw">Ссылка на файл контейнера</param>
-        ///// <param name="datafname">Имя файла подписанных данных для случая отсоединенной подписи. Или пустая строка.</param>
-        ///// <returns>True - подпись верна. False - подпись не прошла проверку, в том числе по причине не криптографических ошибок.</returns>
-        //[SecuritySafeCritical]
-        //protected bool Verify(PackageWrapper pw, string datafname)
-        //{
-        //    // очищаем память
-        //    GC.Collect();
-
-        //    Reporter($"Начинаем проверку подписи: {pw.FilePathString}");
-
-        //    byte[] sign = File.ReadAllBytes(pw.FilePathString);
-        //    try
-        //    {
-        //        if (datafname.Length > 0)
-        //        {
-        //            using (FileStream ifs = File.OpenRead(datafname))
-        //            {
-        //                Reporter($"Начинаем проверку отсоединенной подписи");
-        //                Coder.Verify(sign, ifs);
-        //            }
-        //        }
-        //        else
-        //        {
-        //            Reporter($"Начинаем проверку присоединенной подписи");
-        //            Coder.Verify(sign);
-        //        }
-
-        //        Reporter($"Подпись {pw.FilePathString} успешно проверена");
-        //        return true;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Reporter(ex, $"При проверке файла подписи: {pw.FilePathString} возникло исключение");
-        //    }
-
-        //    return false;
-        //}
 
         protected void StartReporting()
         {

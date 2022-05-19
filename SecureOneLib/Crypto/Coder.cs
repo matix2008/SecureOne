@@ -8,8 +8,11 @@ using System.IO;
 using GostCryptography.Base;
 using GostCryptography.Gost_28147_89;
 
-namespace SecureOneLib.Crypto
+namespace SecureOneLib
 {
+    /// <summary>
+    /// Интерфейс для ширования, расшифровки, создания и проверки подписи
+    /// </summary>
     [SecurityCritical]
     public static class Coder
     {
