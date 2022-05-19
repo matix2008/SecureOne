@@ -28,7 +28,7 @@ namespace SecureOneLib
         public CertificateWrapper(string subject)
         {
             X509Certificate2 cert = FindCertificateBySubject(subject);
-            Value = cert ?? throw new ArgumentException($"Can't find valid certificate with this subject: '{subject}'.");
+            Value = cert ?? throw new SOCertificateNotFoundException($"Can't find valid certificate with this subject: '{subject}'.");
         }
 
         /// <summary>
@@ -53,7 +53,8 @@ namespace SecureOneLib
             Regex rx = new Regex("CN:.+SN", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnoreCase);
             MatchCollection matches = rx.Matches(certstr);
             if (matches.Count != 1)
-                throw new ArgumentException("Invalid certificate string.");
+                throw new SOCertificateNotFoundException("Invalid certificate string.");
+
             string match = matches[0].Value;
             return new CertificateWrapper(match.Substring(4, match.Length - 7));
         }

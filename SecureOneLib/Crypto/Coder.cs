@@ -189,7 +189,7 @@ namespace SecureOneLib
             if (recipientCert == null)
                 throw new ArgumentNullException("recipientCert");
             if (!encryptedFileStream.CanWrite)
-                throw new ArgumentException("Поток для шифрованных данных не доступен для записи.");
+                throw new IOException("Поток для шифрованных данных не доступен для записи.");
 
             AsymmetricAlgorithm publicKey = recipientCert.GetPublicKeyAlgorithm();
 
@@ -285,7 +285,7 @@ namespace SecureOneLib
             if (recipientCert == null)
                 throw new ArgumentNullException("recipientCert");
             if (!encryptedFileStream.CanWrite)
-                throw new ArgumentException("Поток для шифрованных данных не доступен для записи.");
+                throw new IOException("Поток для шифрованных данных не доступен для записи.");
 
             AsymmetricAlgorithm publicKey = recipientCert.GetPublicKeyAlgorithm();
 
@@ -341,7 +341,7 @@ namespace SecureOneLib
             if (recipientCert == null)
                 throw new ArgumentNullException("recipientCert");
             if (!dataFileStream.CanWrite)
-                throw new ArgumentException("Поток для расшифрованных данных не доступен для записи.");
+                throw new IOException("Поток для расшифрованных данных не доступен для записи.");
 
             /*
              * Заголовок:
@@ -426,7 +426,7 @@ namespace SecureOneLib
             if (recipientCert == null)
                 throw new ArgumentNullException("recipientCert");
             if (!dataFileStream.CanWrite)
-                throw new ArgumentException("Поток для расшифрованных данных не доступен для записи.");
+                throw new IOException("Поток для расшифрованных данных не доступен для записи.");
             if (IV == null)
                 throw new ArgumentNullException("IV");
             if (CKey == null)
@@ -555,7 +555,7 @@ namespace SecureOneLib
             EnvelopedCms envelopedCms = new EnvelopedCms();
             envelopedCms.Decode(signedCms.ContentInfo.Content);
 
-            bool decrypted = envelopedCms.RecipientInfos.Count > 0;
+            bool decrypted = false;
             foreach (RecipientInfo ri in envelopedCms.RecipientInfos)
             {
                 X509Certificate2 cert = CertificateWrapper.FindCertificateBySubjectIdentifier(StoreLocation.CurrentUser, ri.RecipientIdentifier);
@@ -590,7 +590,7 @@ namespace SecureOneLib
             // Декодируем сообщение.
             envelopedCms.Decode(encodedEnvelopedCmsData);
 
-            bool decrypted = decrypted = envelopedCms.RecipientInfos.Count > 0; ;
+            bool decrypted = false;
             foreach (RecipientInfo ri in envelopedCms.RecipientInfos)
             {
                 X509Certificate2 cert = CertificateWrapper.FindCertificateBySubjectIdentifier(StoreLocation.CurrentUser, ri.RecipientIdentifier);

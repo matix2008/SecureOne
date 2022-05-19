@@ -12,7 +12,7 @@ namespace SecureOneLib
         public FileWrapper(string filepath)
         {
             if (!File.Exists(filepath))
-                throw new ArgumentException("File is not exists.");
+                throw new IOException("File is not exists.");
 
             FilePathString = filepath;
             FInfo = new FileInfo(filepath);
@@ -163,17 +163,30 @@ namespace SecureOneLib
 
     }
 
+    /// <summary>
+    /// Реализует обетку над файлом - крипто контейнером
+    /// </summary>
     public class PackageWrapper : FileWrapper
     {
+        /// <summary>
+        /// Поддерживаемые типы контейнеров
+        /// </summary>
         public enum PackageType { Unknown, ENC, SIG, P7S, P7M, P7SM };
-        public enum SignStatus  { NotFound, UnknownDetached, Ok, Failed }
 
+        /// <summary>
+        /// Конструирует объект обертку
+        /// </summary>
+        /// <param name="filepath"></param>
         public PackageWrapper(string filepath)
             : base(filepath)
         {
             Type = PackageType.Unknown;
         }
 
+        /// <summary>
+        /// Перегруженная функция. Возвращает реквизиты контейнера
+        /// </summary>
+        /// <returns>Массив строк - реквизитов</returns>
         public override string[] GetRequisites()
         {
             List<string> requisites = new List<string>(base.GetRequisites());
@@ -197,8 +210,15 @@ namespace SecureOneLib
             return requisites.ToArray();
         }
 
+        /// <summary>
+        /// Возвращает тип контейнера
+        /// </summary>
         public PackageType Type { get; protected set;  }
 
+        /// <summary>
+        /// Возвращает 
+        /// </summary>
+        /// <returns></returns>
         public string GetNativeFilePath()
         {
             string native = Path.GetFileNameWithoutExtension(FilePathString);

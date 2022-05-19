@@ -59,14 +59,5 @@ namespace SecureOne.Properties {
                 resourceCulture = value;
             }
         }
-        
-        /// <summary>
-        ///   Ищет локализованную строку, похожую на &quot;Чаcть обязательных настроек отсутствует. Проведите найстройку системы.&quot;.
-        /// </summary>
-        public static string IRS_REQUARED_SETTINGS_ABSENT {
-            get {
-                return ResourceManager.GetString("IRS_REQUARED_SETTINGS_ABSENT", resourceCulture);
-            }
-        }
     }
 }

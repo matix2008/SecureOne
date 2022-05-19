@@ -1,16 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace SecureOne
 {
+    /// <summary>
+    /// Реализует диалог для отображения сведений о программе
+    /// </summary>
     partial class AboutBox : Form
     {
+        /// <summary>
+        /// Конструирует объект
+        /// </summary>
         public AboutBox()
         {
             InitializeComponent();
@@ -24,7 +25,9 @@ namespace SecureOne
         }
 
         #region Методы доступа к атрибутам сборки
-
+        /// <summary>
+        /// Вовзращает название продуктвъа
+        /// </summary>
         public string AssemblyTitle
         {
             get
@@ -41,7 +44,9 @@ namespace SecureOne
                 return System.IO.Path.GetFileNameWithoutExtension(Assembly.GetExecutingAssembly().CodeBase);
             }
         }
-
+        /// <summary>
+        /// Вовзращает версию продукта
+        /// </summary>
         public string AssemblyVersion
         {
             get
@@ -49,7 +54,9 @@ namespace SecureOne
                 return Assembly.GetExecutingAssembly().GetName().Version.ToString();
             }
         }
-
+        /// <summary>
+        /// Вовзращает описание
+        /// </summary>
         public string AssemblyDescription
         {
             get
@@ -62,7 +69,9 @@ namespace SecureOne
                 return ((AssemblyDescriptionAttribute)attributes[0]).Description;
             }
         }
-
+        /// <summary>
+        /// Вовзращает название продукта
+        /// </summary>
         public string AssemblyProduct
         {
             get
@@ -75,7 +84,9 @@ namespace SecureOne
                 return ((AssemblyProductAttribute)attributes[0]).Product;
             }
         }
-
+        /// <summary>
+        /// Вовзращает copyright
+        /// </summary>
         public string AssemblyCopyright
         {
             get
@@ -88,7 +99,9 @@ namespace SecureOne
                 return ((AssemblyCopyrightAttribute)attributes[0]).Copyright;
             }
         }
-
+        /// <summary>
+        /// Вовзращает название компании
+        /// </summary>
         public string AssemblyCompany
         {
             get

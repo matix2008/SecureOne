@@ -7,12 +7,18 @@ using SecureOneLib;
 
 namespace SecureOne
 {
+    /// <summary>
+    /// Реализует основное окно приложения
+    /// </summary>
     public partial class MainForm : Form
     {
-        private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
-        private BackgroundCryptoWorker _backgroundCryptoWorker = null;
-        private Settings _options = null;
+        private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();    // объект логирования
+        private BackgroundCryptoWorker _backgroundCryptoWorker = null;                  // объект для асинхронных операций
+        private MainSettings _options = null;                                               // объект для доступа к системным настройкам
 
+        /// <summary>
+        /// Конструирует объект
+        /// </summary>
         public MainForm()
         {
             InitializeComponent();
@@ -24,29 +30,27 @@ namespace SecureOne
 
         #region Обработчики событий формы и меню
 
+        /// <summary>
+        /// Обрабатываем событие загрузки формы
+        /// </summary>
         private void MainForm_Load(object sender, EventArgs e)
         {
             signButton.Enabled = false;
             encryptButton.Enabled = false;
             verifyDecryptButton.Enabled = false;
         }
-
+        /// <summary>
+        /// Обрабатываем событие первого отображения формы
+        /// </summary>
         private void MainForm_Shown(object sender, EventArgs e)
         {
             try
             {
-                _options = new Settings();
+                _options = new MainSettings();
 
-                //if (!_options.CheckRequiredFieldsAreFilled())
-                //{
-                //    Utils.MessageHelper.Warning(this, "Чаcть обязательных настроек отсутствует. Проведите найстройку системы.");
-                //    OpenFormOptions();
-                //}
-                //else
-                {
-                    StopReporting();
-                    _backgroundCryptoWorker.StartCheckSettings(_options);
-                }
+                StopReporting();
+                _backgroundCryptoWorker.StartCheckSettings(_options);
+
             }
             catch (Exception ex)
             {
@@ -57,7 +61,9 @@ namespace SecureOne
                 StopReporting();
             }
         }
-
+        /// <summary>
+        /// Обрабатываем событие попытки закрытия формы
+        /// </summary>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             if (_backgroundCryptoWorker.IsBusy)
@@ -66,17 +72,23 @@ namespace SecureOne
                 e.Cancel = true;
             }
         }
-
+        /// <summary>
+        /// Обрабатываем событие выбора пункта меню - настройки
+        /// </summary>
         private void optionsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             OpenFormOptions();
         }
-
+        /// <summary>
+        /// Обрабатываем событие выбора пункта меню - выход
+        /// </summary>
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
             this.Close();
         }
-
+        /// <summary>
+        /// Обрабатываем событие выбора пункта меню - открыть
+        /// </summary>
         private void openToolStripMenuItem_Click(object sender, EventArgs e)
         {
             openFileDialog.InitialDirectory = _options.OwnerWorkingFolder;
@@ -117,7 +129,9 @@ namespace SecureOne
                     encodedDataListBox.SelectedIndex = 0;
             }
         }
-
+        /// <summary>
+        /// Обрабатываем событие выбора пункта меню - о программе
+        /// </summary>
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
             AboutBox about = new AboutBox();
@@ -127,7 +141,9 @@ namespace SecureOne
         #endregion  // Обработчики событий формы и меню
 
         #region Обработчики событий для списков (ListBox)
-
+        /// <summary>
+        /// Обрабатываем событие нажатия кнопки для списка незащищенных данных
+        /// </summary>
         private void plainDataListBox_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
         {
             if (e.KeyCode == Keys.Delete && plainDataListBox.SelectedIndex != -1)
@@ -135,7 +151,9 @@ namespace SecureOne
                 plainDataListBox.Items.RemoveAt(plainDataListBox.SelectedIndex);
             }
         }
-
+        /// <summary>
+        /// Обрабатываем событие нажатия кнопки для списка защищенных данных
+        /// </summary>
         private void encodedDataListBox_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
         {
             if (encodedDataListBox.SelectedIndex != -1)
@@ -146,7 +164,9 @@ namespace SecureOne
                 }
             }
         }
-
+        /// <summary>
+        /// Обрабатываем событие изменения выбора элекмента для списка незащищенных данных
+        /// </summary>
         private void plainDataListBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             bool enabled = plainDataListBox.SelectedItems.Count > 0;
@@ -158,7 +178,9 @@ namespace SecureOne
             else
                 SetFileInfo(null);
         }
-
+        /// <summary>
+        /// Обрабатываем событие изменения выбора элекмента для списка защищенных данных
+        /// </summary>
         private void encodedDataListBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             bool enabled = encodedDataListBox.SelectedItems.Count > 0;
@@ -173,7 +195,9 @@ namespace SecureOne
         #endregion // Обработчики событий для списков (ListBox)
 
         #region Обработчики событий для кнопок
-
+        /// <summary>
+        /// Обрабатываем событие нажатия кнопки "Подписать"
+        /// </summary>
         private void signButton_Click(object sender, EventArgs e)
         {
             try
@@ -199,7 +223,9 @@ namespace SecureOne
                 StopReporting();
             }
         }
-
+        /// <summary>
+        /// Обрабатываем событие нажатия кнопки "Зашифровать"
+        /// </summary>
         private void encryptButton_Click(object sender, EventArgs e)
         {
             try
@@ -254,7 +280,9 @@ namespace SecureOne
                 StopReporting();
             }
         }
-
+        /// <summary>
+        /// Обрабатываем событие нажатия кнопки "Проверить / Расшифровать"
+        /// </summary>
         private void verifyDecryptButton_Click(object sender, EventArgs e)
         {
             try
@@ -405,7 +433,9 @@ namespace SecureOne
         #endregion
 
         #region Служебные методы
-
+        /// <summary>
+        /// Открывает диалог загрузки файлов
+        /// </summary>
         private void OpenFormOptions()
         {
             try
@@ -428,7 +458,9 @@ namespace SecureOne
                 Utils.MessageHelper.Error(this, ex, "Ошибка при сохранении настроек приложения.");
             }
         }
-
+        /// <summary>
+        /// Устаналивает значения реквизитов файла в панель отображения реквизитов
+        /// </summary>
         private void SetFileInfo(FileWrapper fw)
         {
             fileInfolistBox.Items.Clear();
@@ -441,38 +473,50 @@ namespace SecureOne
                 }
             }
         }
-
+        /// <summary>
+        /// Очищает список незащищенных данных
+        /// </summary>
         private void ClearPlainDataListBox()
         {
             plainDataListBox.Items.Clear();
             signButton.Enabled = false;
             encryptButton.Enabled = false;
         }
-
+        /// <summary>
+        /// Очищает список защищенных данных
+        /// </summary>
         private void ClearEncodedDataListBox()
         {
             encodedDataListBox.Items.Clear();
             verifyDecryptButton.Enabled = false;
         }
-
+        /// <summary>
+        /// Добавляет элекмент в список защищенных данных
+        /// </summary>
         private void AddPackages(PackageWrapper pw)
         {
             encodedDataListBox.Items.Add(pw);
             verifyDecryptButton.Enabled = true;
         }
-
+        /// <summary>
+        /// Добавляет элекменты в список защищенных данных
+        /// </summary>
         private void AddPackages(PackageWrapper[] pwarr)
         {
             encodedDataListBox.Items.AddRange(pwarr);
             verifyDecryptButton.Enabled = true;
         }
-
+        /// <summary>
+        /// Устаналивает атрибуты для начала процедуры оповещения
+        /// </summary>
         protected void StartReporting()
         {
             Cursor.Current = Cursors.WaitCursor;
             toolStripProgressBar.Visible = true;
         }
-
+        /// <summary>
+        /// Устаналивает атрибуты для заверешения процедуры оповещения
+        /// </summary>
         protected void StopReporting()
         {
             toolStripProgressBar.Visible = false;

@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
-using System.Security;
 using System.Windows.Forms;
 using System.ComponentModel;
 using SecureOneLib;
@@ -31,7 +27,7 @@ namespace SecureOne
         protected CertificateWrapper _recipientCertificate;     // сертификат контрагента
         protected bool _forсeDetachedSign;                      // флаг отсоединенной подписи
         protected bool _customEncryptionFormat;                 // флаг собственного формата
-        protected Settings _settings;                           // ссылка на настройки
+        protected MainSettings _settings;                           // ссылка на настройки
 
         /// <summary>
         /// Конструирует объект для асинхронных операций
@@ -72,7 +68,7 @@ namespace SecureOne
         /// <summary>
         /// Начинает асихронную проверку настроек
         /// </summary>
-        public bool StartCheckSettings(Settings settings)
+        public bool StartCheckSettings(MainSettings settings)
         {
             if (CheckNotBusy())
             {
@@ -502,6 +498,10 @@ namespace SecureOne
             return result;
         }
 
+        /// <summary>
+        /// Оповещает основное окно о выполнении операции
+        /// </summary>
+        /// <param name="state"></param>
         protected void Report(SOState state)
         {
             logger.Info(state.Message);

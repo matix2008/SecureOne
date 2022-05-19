@@ -11,11 +11,11 @@ namespace SecureOne
     /// <summary>
     /// Реализует набор системных настроект приложения
     /// </summary>
-    public class Settings
+    public class MainSettings
     {
-        private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
+        private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();    // Объект логирования
 
-        public Settings()
+        public MainSettings()
         {
             // Загружаем данные найтроек из файла
             Load();
@@ -27,6 +27,9 @@ namespace SecureOne
         public bool AllwaysUseDetachedSign { get; set; }
         public bool AllwaysUseCustomEncFrmt { get; set; }
 
+        /// <summary>
+        /// Сбрасывает настройки
+        /// </summary>
         public void Reset()
         {
             Properties.Settings.Default.Reset();
@@ -35,6 +38,9 @@ namespace SecureOne
             Load();
         }
 
+        /// <summary>
+        /// Загружает настройки
+        /// </summary>
         public void Load()
         {
             try
@@ -56,6 +62,9 @@ namespace SecureOne
             }
         }
 
+        /// <summary>
+        /// Сохраняет настройки
+        /// </summary>
         public void Save()
         {
             try

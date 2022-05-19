@@ -42,17 +42,17 @@ namespace SecureOneLib
             : base(message, inner) { }
     }
 
-    [Serializable]
-    public class SOInvalidSettingsException : SecureOneBaseException
-    {
-        public SOInvalidSettingsException() { }
+    //[Serializable]
+    //public class SOInvalidSettingsException : SecureOneBaseException
+    //{
+    //    public SOInvalidSettingsException() { }
 
-        public SOInvalidSettingsException(string message)
-            : base(message) { }
+    //    public SOInvalidSettingsException(string message)
+    //        : base(message) { }
 
-        public SOInvalidSettingsException(string message, Exception inner)
-            : base(message, inner) { }
-    }
+    //    public SOInvalidSettingsException(string message, Exception inner)
+    //        : base(message, inner) { }
+    //}
 
     [Serializable]
     public class SOCryptographicException : SecureOneBaseException
@@ -66,15 +66,15 @@ namespace SecureOneLib
             : base(message, inner) { }
     }
 
-    [Serializable]
-    public class SOBadPackageTypeException : SecureOneBaseException
-    {
-        public SOBadPackageTypeException() { }
+    //[Serializable]
+    //public class SOBadPackageTypeException : SecureOneBaseException
+    //{
+    //    public SOBadPackageTypeException() { }
 
-        public SOBadPackageTypeException(string message)
-            : base(message) { }
+    //    public SOBadPackageTypeException(string message)
+    //        : base(message) { }
 
-        public SOBadPackageTypeException(string message, Exception inner)
-            : base(message, inner) { }
-    }
+    //    public SOBadPackageTypeException(string message, Exception inner)
+    //        : base(message, inner) { }
+    //}
 }

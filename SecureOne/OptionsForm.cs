@@ -12,15 +12,18 @@ using SecureOneLib;
 
 namespace SecureOne
 {
+    /// <summary>
+    /// Реализует деаилог настройки системных параметров
+    /// </summary>
     public partial class OptionsForm : Form
     {
-        private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
+        private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();    // Объект логирования
 
         /// <summary>
         /// Конструирует форму
         /// </summary>
         /// <param name="opt">Ссылка на настройки приложения</param>
-        public OptionsForm(Settings opt)
+        public OptionsForm(MainSettings opt)
         {
             InitializeComponent();
 
@@ -32,12 +35,30 @@ namespace SecureOne
 
         }
 
+        /// <summary>
+        /// Рабочий каталог
+        /// </summary>
         public string OwnerWorkingFolder { get; protected set; }
+        /// <summary>
+        /// Сертификат владельца
+        /// </summary>
         public CertificateWrapper OwnerCertificate { get; protected set; }
+        /// <summary>
+        /// Коллекция сертификатов контрагентов
+        /// </summary>
         public CertificateCollectionWrapper RecipientsCertificatesCollection { get; protected set; }
+        /// <summary>
+        /// Флаг использования отсоединенной подписи
+        /// </summary>
         public bool AllwaysUseDetachedSign { get; protected set; }
+        /// <summary>
+        /// Флаг использования собственного формата шифрования
+        /// </summary>
         public bool AllwaysUseCustomEncFrmt { get; protected set; }
 
+        /// <summary>
+        /// Обрабатывает событие загрузки формы
+        /// </summary>
         private void OptionsForm_Load(object sender, EventArgs e)
         {
             try
@@ -69,7 +90,9 @@ namespace SecureOne
             this.alwaysUseDetachedSignCheckBox.CheckedChanged += new System.EventHandler(this.options_CheckedChanged);
         }
 
-
+        /// <summary>
+        /// Обрабоатывает событие нажатия на копку выбора рабочего каталога
+        /// </summary>
         private void setupWorkingFolderButton_Click(object sender, EventArgs e)
         {
             // Открываем диалог выбора каталога
@@ -79,7 +102,9 @@ namespace SecureOne
                 workingFolderTextBox.Text = OwnerWorkingFolder;
             }
         }
-
+        /// <summary>
+        /// Обрабоатывает событие нажатия на копку выбора сертификата владельца
+        /// </summary>
         private void addSenderCertificateButton_Click(object sender, EventArgs e)
         {
             // Открываем форму для выбора одного сертификата
@@ -90,7 +115,9 @@ namespace SecureOne
                 ownerCertificateTextBox.Text = OwnerCertificate.ToString();
             }
         }
-
+        /// <summary>
+        /// Обрабоатывает событие нажатия на копку выбора сертификата контагента
+        /// </summary>
         private void addRecipientCertificateButton_Click(object sender, EventArgs e)
         {
             // Открываем форму для выбора списка сертификатов
@@ -104,13 +131,17 @@ namespace SecureOne
                 recipientsCertificatesListBox.Items.AddRange(arr);
             }
         }
-
+        /// <summary>
+        /// Обрабоатывает событие изменения флагов
+        /// </summary>
         private void options_CheckedChanged(object sender, EventArgs e)
         {
             AllwaysUseDetachedSign = alwaysUseDetachedSignCheckBox.Checked;
             AllwaysUseCustomEncFrmt = alwaysUseCustomEncFrmtCheckBox.Checked;
         }
-
+        /// <summary>
+        /// Обрабоатывает событие нажатия на копку сброса установленных параметров
+        /// </summary>
         private void clearButton_Click(object sender, EventArgs e)
         {
             OwnerWorkingFolder = "";
