@@ -67,7 +67,7 @@ namespace SecureOne
                     if (ch.Build(cw.Value))
                     {
                         // Сертификат проверен
-                        Utils.MessageHelper.Info(this, "Certificate is valid");
+                        MessageHelper.Info(this, "Certificate is valid");
                     }
                     else
                     {
@@ -77,12 +77,12 @@ namespace SecureOne
                         foreach (var status in ch.ChainStatus)
                             message += status.StatusInformation;
 
-                        Utils.MessageHelper.Warning(this, "Certificate is not valid. " + message);
+                        MessageHelper.Warning(this, "Certificate is not valid. " + message);
                     }
                 }
                 catch(Exception ex)
                 {
-                    Utils.MessageHelper.Error(this, ex);
+                    MessageHelper.Error(this, ex);
                 }
 
                 Cursor.Current = Cursors.Default;
@@ -171,7 +171,7 @@ namespace SecureOne
             }
             catch (Exception ex)
             {
-                Utils.MessageHelper.Error(this, ex);
+                MessageHelper.Error(this, ex);
             }
         }
     }

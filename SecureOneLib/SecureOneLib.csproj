@@ -72,10 +72,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Crypto\Coder.cs" />
+    <Compile Include="Scrambler.cs" />
     <Compile Include="SOState.cs" />
-    <Compile Include="Utilities\CertificateWrapper.cs" />
-    <Compile Include="Utilities\FileWrapper.cs" />
+    <Compile Include="CertificateWrapper.cs" />
+    <Compile Include="FileWrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SecureOneExceptions.cs" />
   </ItemGroup>
@@ -87,7 +87,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="SOL_ClassDiagram.cd" />
+    <None Include="Diagramms\CertificateWrappers.cd" />
+    <None Include="Diagramms\Exceptions.cd" />
+    <None Include="Diagramms\FileWrappers.cd" />
+    <None Include="Diagramms\Scrambler.cd" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup />

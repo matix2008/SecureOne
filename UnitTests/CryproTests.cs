@@ -200,7 +200,7 @@ namespace UnitTests
                 string enctempfile = TestConfig.GetTempFileName();
                 using (FileStream ofs1 = File.Create(enctempfile))
                 {
-                    Coder.EncryptEx(input, ofs1, cert, out IV, out CKey);
+                    Scrambler.EncryptEx(input, ofs1, cert, out IV, out CKey);
                 }
 
                 string dectempfile = TestConfig.GetTempFileName();
@@ -208,7 +208,7 @@ namespace UnitTests
                 {
                     using (FileStream ofs2 = File.Create(dectempfile))
                     {
-                        Coder.DecryptEx(ifs, ofs2, cert, IV, CKey);
+                        Scrambler.DecryptEx(ifs, ofs2, cert, IV, CKey);
                     }
                 }
 
@@ -229,7 +229,7 @@ namespace UnitTests
                 string enctempfile = TestConfig.GetTempFileName();
                 using (FileStream ofs1 = File.Create(enctempfile))
                 {
-                    Coder.Encrypt(input, ofs1, cert);
+                    Scrambler.Encrypt(input, ofs1, cert);
                 }
 
                 string dectempfile = TestConfig.GetTempFileName();
@@ -237,7 +237,7 @@ namespace UnitTests
                 {
                     using (FileStream ofs2 = File.Create(dectempfile))
                     {
-                        Coder.Decrypt(ifs, ofs2, cert);
+                        Scrambler.Decrypt(ifs, ofs2, cert);
                     }
                 }
 
@@ -259,7 +259,7 @@ namespace UnitTests
                 string enctempfile = TestConfig.GetTempFileName();
                 using (FileStream ofs1 = File.Create(enctempfile))
                 {
-                    Coder.Encrypt(input, ofs1, validcert);
+                    Scrambler.Encrypt(input, ofs1, validcert);
                 }
 
                 using (FileStream ifs = File.OpenRead(enctempfile))
@@ -269,7 +269,7 @@ namespace UnitTests
                         string dectempfile = TestConfig.GetTempFileName();
                         using (FileStream ofs2 = File.Create(dectempfile))
                         {
-                            Coder.Decrypt(ifs, ofs2, invalidcert);
+                            Scrambler.Decrypt(ifs, ofs2, invalidcert);
                         }
                     }
                     catch (CryptographicException)
@@ -293,8 +293,8 @@ namespace UnitTests
         {
             byte[] input = Encoding.ASCII.GetBytes(str);
 
-            byte[] encrypted = Coder.Encrypt(input, cert);
-            byte[] output = Coder.Decrypt(encrypted);
+            byte[] encrypted = Scrambler.Encrypt(input, cert);
+            byte[] output = Scrambler.Decrypt(encrypted);
 
             Assert.IsTrue(output.SequenceEqual(input));
         }
@@ -308,8 +308,8 @@ namespace UnitTests
         {
             byte[] input = Encoding.ASCII.GetBytes(str);
 
-            byte[] encrypted = Coder.SignEncrypt(input, cert1, cert2);
-            byte[] output = Coder.VerifyDecrypt(encrypted);
+            byte[] encrypted = Scrambler.SignEncrypt(input, cert1, cert2);
+            byte[] output = Scrambler.VerifyDecrypt(encrypted);
 
             Assert.IsTrue(output.SequenceEqual(input));
         }
@@ -321,8 +321,8 @@ namespace UnitTests
         public void SignAttachedVerifyBytes(X509Certificate2 cert, string str)
         {
             byte[] data = Encoding.ASCII.GetBytes(str);
-            byte[] sign = Coder.SignAttached(data, cert);
-            Coder.Verify(sign, true);
+            byte[] sign = Scrambler.SignAttached(data, cert);
+            Scrambler.Verify(sign, true);
         }
         /// <summary>
         /// Тестирует формирование отсоединенной подписи по стандарту CMS / PKCS7 и ее проверку
@@ -332,9 +332,9 @@ namespace UnitTests
         public void SignDetachedVerifyStream(X509Certificate2 cert, FileStream input)
         {
             input.Position = 0;
-            byte[] sign = Coder.SignDetached(input, cert);
+            byte[] sign = Scrambler.SignDetached(input, cert);
             input.Position = 0;
-            Coder.Verify(sign, input, true);
+            Scrambler.Verify(sign, input, true);
         }
         #endregion
     }

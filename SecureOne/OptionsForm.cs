@@ -13,7 +13,7 @@ using SecureOneLib;
 namespace SecureOne
 {
     /// <summary>
-    /// Реализует деаилог настройки системных параметров
+    /// Реализует диалог настройки параметров приложения
     /// </summary>
     public partial class OptionsForm : Form
     {
@@ -23,7 +23,7 @@ namespace SecureOne
         /// Конструирует форму
         /// </summary>
         /// <param name="opt">Ссылка на настройки приложения</param>
-        public OptionsForm(MainSettings opt)
+        public OptionsForm(Settings opt)
         {
             InitializeComponent();
 

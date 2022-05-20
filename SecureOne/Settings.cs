@@ -9,22 +9,40 @@ using SecureOneLib;
 namespace SecureOne
 {
     /// <summary>
-    /// Реализует набор системных настроект приложения
+    /// Реализует набор системных настроек приложения
     /// </summary>
-    public class MainSettings
+    public class Settings
     {
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();    // Объект логирования
 
-        public MainSettings()
+        /// <summary>
+        /// Конструирует объект настроек
+        /// </summary>
+        public Settings()
         {
             // Загружаем данные найтроек из файла
             Load();
         }
 
+        /// <summary>
+        /// Рабочий каталог
+        /// </summary>
         public string OwnerWorkingFolder { get; set; }
+        /// <summary>
+        /// Сертификатр владельца
+        /// </summary>
         public CertificateWrapper OwnerCertificate { get; set; }
+        /// <summary>
+        /// Коллекция сертификатов контрагентов
+        /// </summary>
         public CertificateCollectionWrapper RecipientsCertificatesCollection { get; set; }
+        /// <summary>
+        /// Флаг - всегда использовать отсоединенную подпись
+        /// </summary>
         public bool AllwaysUseDetachedSign { get; set; }
+        /// <summary>
+        /// Флаг - всегда использовать собственный формат шифрования
+        /// </summary>
         public bool AllwaysUseCustomEncFrmt { get; set; }
 
         /// <summary>

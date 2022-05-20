@@ -22,7 +22,6 @@ namespace SecureOneLib
             Message = message;
             Exception = ex;
         }
-
         public CryptoState State { get; set; }
         public string Message { get; set; }
         public Exception Exception { get; set; }

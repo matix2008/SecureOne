@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace SecureOne.Utils
+namespace SecureOne
 {
+    /// <summary>
+    /// Реализует удобные функции для сообщений пользователю
+    /// </summary>
     public static class MessageHelper
     {
         public static DialogResult QuestionYN(Form owner, string message, string caption = "")

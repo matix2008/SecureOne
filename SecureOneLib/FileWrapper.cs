@@ -9,6 +9,10 @@ namespace SecureOneLib
     /// </summary>
     public class FileWrapper
     {
+        /// <summary>
+        /// Конструирует обертку
+        /// </summary>
+        /// <param name="filepath"></param>
         public FileWrapper(string filepath)
         {
             if (!File.Exists(filepath))
@@ -82,33 +86,25 @@ namespace SecureOneLib
             return requisites.ToArray();
         }
 
-        //public FileStream OpenRead()
-        //{
-        //    return File.OpenRead(FilePathString);
-        //}
 
-        //public byte[] ReadAllBytes()
-        //{
-        //    return File.ReadAllBytes(FilePathString);
-        //}
+        //#region Криптографические методы
 
-        //public FileStream OpenWrite(string ext, bool createnew = false)
-        //{
-        //    return new FileStream(FilePathString + ext, (createnew) ? FileMode.CreateNew : FileMode.Create);
-        //}
-
-        #region Криптографические методы
-
+        /// <summary>
+        /// Подписывает файл, создавая присоединенную или отсоединенную подпись
+        /// </summary>
+        /// <param name="signerCert">Сертификат владельца</param>
+        /// <param name="detached">Признак отсоединенной подписи</param>
+        /// <returns>Имя созданного файла</returns>
         public string Sign(CertificateWrapper signerCert, bool detached)
         {
             byte[] sign = null;
             string ext = ".sig";
 
             if (detached)
-                sign = Coder.SignDetached(File.OpenRead(FilePathString), signerCert.Value);
+                sign = Scrambler.SignDetached(File.OpenRead(FilePathString), signerCert.Value);
             else
             { 
-                sign = Coder.SignAttached(File.ReadAllBytes(FilePathString), signerCert.Value);
+                sign = Scrambler.SignAttached(File.ReadAllBytes(FilePathString), signerCert.Value);
                 ext = ".p7s";
             }
 
@@ -117,16 +113,22 @@ namespace SecureOneLib
             return FilePathString + ext;
         }
 
+        /// <summary>
+        /// Подписывает и шифрует файл
+        /// </summary>
+        /// <param name="signerCert">Сертификат владельца</param>
+        /// <param name="recipientCert">Сертификат получателя</param>
+        /// <returns>Имя созданного файла</returns>
         public string SignEncrypt(CertificateWrapper signerCert, CertificateWrapper recipientCert)
         {
             byte[] carr = null;
             string ext = ".p7sm";
 
             if (signerCert != null)
-                carr = Coder.SignEncrypt(File.ReadAllBytes(FilePathString), recipientCert.Value, signerCert.Value);
+                carr = Scrambler.SignEncrypt(File.ReadAllBytes(FilePathString), recipientCert.Value, signerCert.Value);
             else
             {
-                carr = Coder.Encrypt(File.ReadAllBytes(FilePathString), recipientCert.Value);
+                carr = Scrambler.Encrypt(File.ReadAllBytes(FilePathString), recipientCert.Value);
                 ext = ".p7m";
             }
 
@@ -134,21 +136,31 @@ namespace SecureOneLib
 
             return FilePathString + ext;
         }
-
+        /// <summary>
+        /// Шифрует файл
+        /// </summary>
+        /// <param name="recipientCert">Сертификат получателя</param>
+        /// <returns>Имя созданного файла</returns>
         public string Encrypt(CertificateWrapper recipientCert)
         {
             using (FileStream ofs = new FileStream(FilePathString + ".enc", FileMode.Create))
             {
-                Coder.Encrypt(File.OpenRead(FilePathString), ofs, recipientCert.Value);
+                Scrambler.Encrypt(File.OpenRead(FilePathString), ofs, recipientCert.Value);
             }
 
             return FilePathString + ".enc";
         }
 
-        #endregion
+        //#endregion
 
-        #region Статические методы
-
+        //#region Статические методы
+        /// <summary>
+        /// Записывае данные файл
+        /// </summary>
+        /// <param name="data">Данные</param>
+        /// <param name="filename">Имя файла</param>
+        /// <param name="createnew">Признак нового файла</param>
+        /// <returns>Имя созданного файла</returns>
         public static string Write(byte[] data, string filename, bool createnew)
         {
             using (FileStream fs = new FileStream(filename, (createnew) ? FileMode.CreateNew : FileMode.Create))
@@ -159,12 +171,12 @@ namespace SecureOneLib
             return filename;
         }
 
-        #endregion
+        //#endregion
 
     }
 
     /// <summary>
-    /// Реализует обетку над файлом - крипто контейнером
+    /// Реализует обертку над файлом - крипто-контейнером
     /// </summary>
     public class PackageWrapper : FileWrapper
     {
@@ -174,7 +186,7 @@ namespace SecureOneLib
         public enum PackageType { Unknown, ENC, SIG, P7S, P7M, P7SM };
 
         /// <summary>
-        /// Конструирует объект обертку
+        /// Конструирует объект обертку крипто-контейнера
         /// </summary>
         /// <param name="filepath"></param>
         public PackageWrapper(string filepath)
@@ -184,7 +196,7 @@ namespace SecureOneLib
         }
 
         /// <summary>
-        /// Перегруженная функция. Возвращает реквизиты контейнера
+        /// Перегруженная функция. Возвращает реквизиты крипто-контейнера
         /// </summary>
         /// <returns>Массив строк - реквизитов</returns>
         public override string[] GetRequisites()
@@ -211,12 +223,12 @@ namespace SecureOneLib
         }
 
         /// <summary>
-        /// Возвращает тип контейнера
+        /// Возвращает тип крипто-контейнера
         /// </summary>
         public PackageType Type { get; protected set;  }
 
         /// <summary>
-        /// Возвращает 
+        /// Возвращает исходное имя файла
         /// </summary>
         /// <returns></returns>
         public string GetNativeFilePath()
@@ -227,8 +239,12 @@ namespace SecureOneLib
             return Path.Combine(path, native);
         }
 
-        #region Криптографические методы
-
+        //#region Криптографические методы
+        /// <summary>
+        /// Расшифровывает данные из крипто-контейнера
+        /// </summary>
+        /// <param name="recipientCert">Сертификат получателя</param>
+        /// <returns>Имя расшифрованного файла</returns>
         public string Decrypt(CertificateWrapper recipientCert)
         {
             string ofn = GetNativeFilePath();
@@ -236,10 +252,10 @@ namespace SecureOneLib
             using (FileStream ofs = new FileStream(ofn, FileMode.CreateNew))
             {
                 if (Type == PackageWrapper.PackageType.ENC)
-                    Coder.Decrypt(File.OpenRead(FilePathString), ofs, recipientCert.Value);
+                    Scrambler.Decrypt(File.OpenRead(FilePathString), ofs, recipientCert.Value);
                 else
                 {
-                    byte[] decrypted = Type == PackageWrapper.PackageType.P7M ? Coder.Decrypt(File.ReadAllBytes(FilePathString)) : Coder.VerifyDecrypt(File.ReadAllBytes(FilePathString));
+                    byte[] decrypted = Type == PackageWrapper.PackageType.P7M ? Scrambler.Decrypt(File.ReadAllBytes(FilePathString)) : Scrambler.VerifyDecrypt(File.ReadAllBytes(FilePathString));
                     ofs.Write(decrypted, 0, decrypted.Length);
                 }
             }
@@ -254,7 +270,7 @@ namespace SecureOneLib
         /// <returns>Подписанные данные, если проверка прошла успешно</returns>
         public byte[] Verify(bool verifySignatureOnly = false)
         {
-            return Coder.Verify(File.ReadAllBytes(FilePathString), verifySignatureOnly);
+            return Scrambler.Verify(File.ReadAllBytes(FilePathString), verifySignatureOnly);
         }
 
         /// <summary>
@@ -264,9 +280,9 @@ namespace SecureOneLib
         /// <param name="verifySignatureOnly">True - если нужно проверить только подспись</param>
         public void Verify(string datafilename, bool verifySignatureOnly = false)
         {
-            Coder.Verify(File.ReadAllBytes(FilePathString), File.OpenRead(datafilename), verifySignatureOnly);
+            Scrambler.Verify(File.ReadAllBytes(FilePathString), File.OpenRead(datafilename), verifySignatureOnly);
         }
 
-        #endregion
+        //#endregion
     }
 }

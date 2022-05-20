@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1" MembersFormat="FullSignature">
+  <Class Name="SecureOne.BackgroundCryptoWorker">
+    <Position X="3.25" Y="0.5" Width="7.75" />
+    <Compartments>
+      <Compartment Name="Nested Types" Collapsed="false" />
+    </Compartments>
+    <NestedTypes>
+      <Enum Name="SecureOne.BackgroundCryptoWorker.AsyncCryptoOpration" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>BackgroundCryptoWorker.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>ARgAgAgAgAAAARwSgAIAABAAACAAAAJEQEEAFAAgBAA=</HashCode>
+      <FileName>BackgroundCryptoWorker.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

@@ -7,6 +7,9 @@ using System.Windows.Forms;
 
 namespace SecureOne
 {
+    /// <summary>
+    /// Реализует основной цикл программы
+    /// </summary>
     static class Program
     {
         /// <summary>

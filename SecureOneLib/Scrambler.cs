@@ -11,10 +11,10 @@ using GostCryptography.Gost_28147_89;
 namespace SecureOneLib
 {
     /// <summary>
-    /// Интерфейс для ширования, расшифровки, создания и проверки подписи
+    /// Интерфейс для шифрования, расшифровки, создания и проверки подписи
     /// </summary>
     [SecurityCritical]
-    public static class Coder
+    public static class Scrambler
     {
         /// <summary>
         /// Создает отсоединенную подпсись

@@ -8,6 +8,9 @@ using System.Security.Cryptography;
 
 namespace SecureOne
 {
+    /// <summary>
+    /// Реализует комполнент для выполнения фоновых, асинхронных операций
+    /// </summary>
     public class BackgroundCryptoWorker : BackgroundWorker
     {
         // типы поддерживаемых операций
@@ -27,7 +30,7 @@ namespace SecureOne
         protected CertificateWrapper _recipientCertificate;     // сертификат контрагента
         protected bool _forсeDetachedSign;                      // флаг отсоединенной подписи
         protected bool _customEncryptionFormat;                 // флаг собственного формата
-        protected MainSettings _settings;                           // ссылка на настройки
+        protected Settings _settings;                           // ссылка на настройки
 
         /// <summary>
         /// Конструирует объект для асинхронных операций
@@ -68,7 +71,7 @@ namespace SecureOne
         /// <summary>
         /// Начинает асихронную проверку настроек
         /// </summary>
-        public bool StartCheckSettings(MainSettings settings)
+        public bool StartCheckSettings(Settings settings)
         {
             if (CheckNotBusy())
             {
@@ -209,7 +212,7 @@ namespace SecureOne
         {
             if (this.IsBusy)
             {
-                Utils.MessageHelper.Warning(_owner, "Предыдущая операция еще не закончена. Дождитесь ее заверешения!");
+                MessageHelper.Warning(_owner, "Предыдущая операция еще не закончена. Дождитесь ее заверешения!");
                 return false;
             }
 
@@ -226,8 +229,7 @@ namespace SecureOne
             // Освобождаем память
             GC.Collect();
             
-            BackgroundCryptoWorker worker = sender as BackgroundCryptoWorker;
-            if (worker.CancellationPending == true)
+            if (CancellationPending)
             {
                 e.Cancel = true;
             }
@@ -270,18 +272,24 @@ namespace SecureOne
             Action<SOState.CryptoState, string> _report = (state, message)
                 => Report(SOState.Create(state, message));
 
-            _report(SOState.CryptoState.Start, $"Начинаем шифрование и подпись файла: {_inputFileWrapper}");
+            // очищаем память
+            GC.Collect();
 
             List<PackageWrapper> opwlst = new List<PackageWrapper>();
 
             try
             {
-                // очищаем память
-                GC.Collect();
+                _report(SOState.CryptoState.Start, $"Начинаем шифрование и подпись файла: {_inputFileWrapper}");
 
                 // Если мы должны использовать собственный формат или размер данных потока больше или равно 2 ^ 32
                 if (_customEncryptionFormat || _inputFileWrapper.FInfo.Length > Int32.MaxValue)
                     throw new OutOfMemoryException();   // генерируем исключение
+
+                if (CancellationPending)
+                {
+                    logger.Info("Операция отменена пользователем");
+                    return null;
+                }
 
                 opwlst.Add(new PackageWrapper(_inputFileWrapper.SignEncrypt(_signerCertificate, _recipientCertificate)));
             }
@@ -294,6 +302,12 @@ namespace SecureOne
                     (ex is CryptographicException && ((uint)ex.HResult) == 0x80093106))
                 {
                     // Шифруем в своем формате
+
+                    if (CancellationPending)
+                    {
+                        logger.Info("Операция отменена пользователем");
+                        return null;
+                    }
 
                     if (_customEncryptionFormat)
                         logger.Info("Шифруем в собственном формате");
@@ -326,18 +340,24 @@ namespace SecureOne
             Action<SOState.CryptoState, string> _report = (state, message)
                 => Report(SOState.Create(state, message));
 
-            _report(SOState.CryptoState.Start, $"Подписываем файл: {_inputFileWrapper}");
+            // очищаем память
+            GC.Collect();
 
             string filename = String.Empty;
 
             try
             {
-                // очищаем память
-                GC.Collect();
+                _report(SOState.CryptoState.Start, $"Подписываем файл: {_inputFileWrapper}");
 
                 // Если мы должны сформировать присоединенную подпись или размер данных потока больше или равно 2 ^ 32
                 if (_forсeDetachedSign || _inputFileWrapper.FInfo.Length > Int32.MaxValue)
                     throw new OutOfMemoryException();   // генерируем исключение
+
+                if (CancellationPending)
+                {
+                    logger.Info("Операция отменена пользователем");
+                    return null;
+                }
 
                 logger.Info("Формируем присоединенную подпись");
 
@@ -352,6 +372,12 @@ namespace SecureOne
                 if (ex is OutOfMemoryException ||
                     (ex is System.Security.Cryptography.CryptographicException && ((uint)ex.HResult) == 0x80093106))
                 {
+                    if (CancellationPending)
+                    {
+                        logger.Info("Операция отменена пользователем");
+                        return null;
+                    }
+
                     logger.Info("Формируем отсоединенную подпись");
 
                     filename = _inputFileWrapper.Sign(_signerCertificate, true);
@@ -378,6 +404,12 @@ namespace SecureOne
 
             _report(SOState.CryptoState.Start, $"Расшифровка и проверка файла: {_inputFileWrapper}");
 
+            if (CancellationPending)
+            {
+                logger.Info("Операция отменена пользователем");
+                return String.Empty;
+            }
+
             ((PackageWrapper)_inputFileWrapper).Decrypt(_recipientCertificate);
 
             _report(SOState.CryptoState.Completed, "Расшифровка и проверка файла завершены");
@@ -396,13 +428,19 @@ namespace SecureOne
             // очищаем память
             GC.Collect();
 
-            PackageWrapper pw = _inputFileWrapper as PackageWrapper;
-
-            _report(SOState.CryptoState.Start, $"Проверка отсоединенной подписи файла: {_inputFileWrapper}");
-
             try
             {
+                PackageWrapper pw = _inputFileWrapper as PackageWrapper;
+
+                _report(SOState.CryptoState.Start, $"Проверка отсоединенной подписи файла: {_inputFileWrapper}");
+
                 System.Diagnostics.Debug.Assert(_fileName.Length > 0);
+
+                if (CancellationPending)
+                {
+                    logger.Info("Операция отменена пользователем");
+                    return false;
+                }
 
                 // Проверяем отсоединенную подпись для файла _fileName
                 pw.Verify(_fileName);
@@ -435,12 +473,18 @@ namespace SecureOne
             // очищаем память
             GC.Collect();
 
-            PackageWrapper pw = _inputFileWrapper as PackageWrapper;
-
-            _report(SOState.CryptoState.Start, $"Проверка присоединенной подписи файла: {_inputFileWrapper}");
-
             try
             {
+                PackageWrapper pw = _inputFileWrapper as PackageWrapper;
+
+                _report(SOState.CryptoState.Start, $"Проверка присоединенной подписи файла: {_inputFileWrapper}");
+
+                if (CancellationPending)
+                {
+                    logger.Info("Операция отменена пользователем");
+                    return String.Empty;
+                }
+
                 // Проверяем присоeдиненную подпись и записываем подписанные данные в отдельный файл _fileName
                 // Здесь именно CreateNew = true, т.к. файл с данными уже может существовать  с тем же именем
                 FileWrapper.Write(pw.Verify(), _fileName, true);

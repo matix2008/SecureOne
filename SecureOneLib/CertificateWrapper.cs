@@ -45,6 +45,11 @@ namespace SecureOneLib
             return GetCertShortInfo(Value);
         }
 
+        /// <summary>
+        /// Создает сертификат и возвращает обертку на основе строки сериализации
+        /// </summary>
+        /// <param name="certstr"></param>
+        /// <returns>Обертка сертификата</returns>
         public static CertificateWrapper Parse(string certstr)
         {
             if (certstr.Length == 0)
@@ -92,6 +97,12 @@ namespace SecureOneLib
             return null;
         }
 
+        /// <summary>
+        /// Ищет сертификат в заданном хранилище по идентификатору субъекта
+        /// </summary>
+        /// <param name="storeLocation">Хранилище</param>
+        /// <param name="subjIdentifier">Идентификатор субъекта</param>
+        /// <returns>Сертификат или null</returns>
         public static X509Certificate2 FindCertificateBySubjectIdentifier(StoreLocation storeLocation, SubjectIdentifier subjIdentifier)
         {
             if (subjIdentifier == null)
@@ -127,16 +138,23 @@ namespace SecureOneLib
     }
 
     /// <summary>
-    /// Обертка над коллекцией сертификатов
+    /// Реализует обертку над коллекцией сертификатов X509Certificate2Collection
     /// </summary>
     public class CertificateCollectionWrapper
     {
+        /// <summary>
+        /// Конструирует объект обертку
+        /// </summary>
+        /// <param name="coll">Коллекция сертификатов</param>
         public CertificateCollectionWrapper(X509Certificate2Collection coll)
         {
             Value = coll ?? throw new ArgumentNullException("cert");
             Count = Value.Count;
         }
-
+        /// <summary>
+        /// Конструирует объект обертку
+        /// </summary>
+        /// <param name="arr">Массив сертификатов</param>
         public CertificateCollectionWrapper(CertificateWrapper[] arr)
         {
             if (arr == null)
@@ -149,7 +167,10 @@ namespace SecureOneLib
 
             Count = Value.Count;
         }
-
+        /// <summary>
+        /// Конструирует объект обертку
+        /// </summary>
+        /// <param name="collstr">Строка сериализации</param>
         public CertificateCollectionWrapper(string collstr)
         {
             List<CertificateWrapper> cwl = new List<CertificateWrapper>();
@@ -175,7 +196,7 @@ namespace SecureOneLib
         /// <summary>
         /// Возвращает строку представляющую коллекцию
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Строка сериализации</returns>
         public override string ToString()
         {
             string result = String.Empty;

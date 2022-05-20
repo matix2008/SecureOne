@@ -14,7 +14,7 @@ namespace SecureOne
     {
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();    // объект логирования
         private BackgroundCryptoWorker _backgroundCryptoWorker = null;                  // объект для асинхронных операций
-        private MainSettings _options = null;                                               // объект для доступа к системным настройкам
+        private Settings _options = null;                                               // объект для доступа к системным настройкам
 
         /// <summary>
         /// Конструирует объект
@@ -46,7 +46,7 @@ namespace SecureOne
         {
             try
             {
-                _options = new MainSettings();
+                _options = new Settings();
 
                 StopReporting();
                 _backgroundCryptoWorker.StartCheckSettings(_options);
@@ -54,7 +54,7 @@ namespace SecureOne
             }
             catch (Exception ex)
             {
-                Utils.MessageHelper.Error(this, ex, "Ошибка при загрузке настроек приложения.");
+                MessageHelper.Error(this, ex, "Ошибка при загрузке настроек приложения.");
             }
             finally
             {
@@ -68,8 +68,14 @@ namespace SecureOne
         {
             if (_backgroundCryptoWorker.IsBusy)
             {
-                _backgroundCryptoWorker.CancelAsync();
-                e.Cancel = true;
+                if (_backgroundCryptoWorker.CancellationPending)
+                    MessageHelper.Warning(this, "Операция отменена. Ожидайте заверешения.");
+                else
+                {
+                    _backgroundCryptoWorker.CancelAsync();
+                    e.Cancel = true;
+                }
+
             }
         }
         /// <summary>
@@ -119,7 +125,7 @@ namespace SecureOne
                     catch(Exception ex)
                     {
                         logger.Error(ex, $"Ошибка при загрузке файла: {fn}");
-                        Utils.MessageHelper.Error(this, ex);
+                        MessageHelper.Error(this, ex);
                     }
                 }
 
@@ -204,7 +210,7 @@ namespace SecureOne
             {
                 if (_options.OwnerCertificate == null)
                 {
-                    Utils.MessageHelper.Warning(this, "Сертификат владельца подписи не указан. Создание подписи невозможно. Произведите настройку системы!");
+                    MessageHelper.Warning(this, "Сертификат владельца подписи не указан. Создание подписи невозможно. Произведите настройку системы!");
                     return;
                 }
 
@@ -219,7 +225,7 @@ namespace SecureOne
             catch (Exception ex)
             {
                 logger.Error(ex, "Ошибка при формировании подписи файла.");
-                Utils.MessageHelper.Error(this, ex);
+                MessageHelper.Error(this, ex);
                 StopReporting();
             }
         }
@@ -253,13 +259,13 @@ namespace SecureOne
 
                 if (recipientCert == null)
                 {
-                    Utils.MessageHelper.Warning(this, "Сертификат получателя не выбран. Ширование невозможно.");
+                    MessageHelper.Warning(this, "Сертификат получателя не выбран. Ширование невозможно.");
                     return;
                 }
 
                 if (_options.OwnerCertificate == null)
                 {
-                    if (Utils.MessageHelper.QuestionYN(this,
+                    if (MessageHelper.QuestionYN(this,
                         "Сертификат владельца подписи не указан. Файл будет зашифрован, но не будет подписан. Продолжить?") == DialogResult.No)
                         return;
                 }
@@ -276,7 +282,7 @@ namespace SecureOne
             catch (Exception ex)
             {
                 logger.Error(ex, "Ошибка при шифровании / подписи файла.");
-                Utils.MessageHelper.Error(this, ex);
+                MessageHelper.Error(this, ex);
                 StopReporting();
             }
         }
@@ -296,7 +302,7 @@ namespace SecureOne
                 {
                     if (_options.OwnerCertificate == null)
                     {
-                        Utils.MessageHelper.Warning(this, "Сертификат собственника не указан. Расшифровка невозможна.");
+                        MessageHelper.Warning(this, "Сертификат собственника не указан. Расшифровка невозможна.");
                         return;
                     }
 
@@ -325,7 +331,7 @@ namespace SecureOne
 
                     if (openFileDialog.ShowDialog() != DialogResult.OK)
                     {
-                        Utils.MessageHelper.Warning(this, "Файл данных не загружен. Проверка подписи невозможна.");
+                        MessageHelper.Warning(this, "Файл данных не загружен. Проверка подписи невозможна.");
                         return;
                     }
 
@@ -336,7 +342,7 @@ namespace SecureOne
             catch (Exception ex)
             {
                 logger.Error(ex, "Ошибка при проверке подписи файла");
-                Utils.MessageHelper.Error(this, ex);
+                MessageHelper.Error(this, ex);
                 StopReporting();
             }
         }
@@ -369,11 +375,11 @@ namespace SecureOne
 
             if (e.Cancelled == true)
             {
-                Utils.MessageHelper.Warning(this, "Операция отменена пользователем");
+                MessageHelper.Warning(this, "Операция отменена пользователем");
             }
             else if (e.Error != null)
             {
-                Utils.MessageHelper.Error(this, $"Произошла фатальная ошибка: {e.Error.Message}");
+                MessageHelper.Error(this, $"Произошла фатальная ошибка: {e.Error.Message}");
 
                 logger.Info(e.Error);
             }
@@ -388,16 +394,16 @@ namespace SecureOne
 
                     case BackgroundCryptoWorker.AsyncCryptoOpration.Sign:
                         AddPackages(e.Result as PackageWrapper);
-                        Utils.MessageHelper.Info(this, "Операция успешна завершена");
+                        MessageHelper.Info(this, "Операция успешна завершена");
                         break;
 
                     case BackgroundCryptoWorker.AsyncCryptoOpration.SignEncrypt:
                         AddPackages(e.Result as PackageWrapper[]);
-                        Utils.MessageHelper.Info(this, "Операция успешна завершена");
+                        MessageHelper.Info(this, "Операция успешна завершена");
                         break;
 
                     case BackgroundCryptoWorker.AsyncCryptoOpration.Decrypt:
-                        if (Utils.MessageHelper.QuestionYN(this, "Файл успешно проверен и расшифрован. Открыть расшифрованный файл?") == DialogResult.Yes)
+                        if (MessageHelper.QuestionYN(this, "Файл успешно проверен и расшифрован. Открыть расшифрованный файл?") == DialogResult.Yes)
                             System.Diagnostics.Process.Start(e.Result as string);
                         break;
 
@@ -405,24 +411,24 @@ namespace SecureOne
                         {
                             string filename = e.Result as string;
                             if (filename.Length == 0 )
-                                Utils.MessageHelper.Warning(this, "Подпись не верна!");
+                                MessageHelper.Warning(this, "Подпись не верна!");
                             else
-                            if (Utils.MessageHelper.QuestionYN(this, "Файл успешно проверен. Открыть файл?") == DialogResult.Yes)
+                            if (MessageHelper.QuestionYN(this, "Файл успешно проверен. Открыть файл?") == DialogResult.Yes)
                                 System.Diagnostics.Process.Start(e.Result as string);
                         }
                         break;
 
                     case BackgroundCryptoWorker.AsyncCryptoOpration.Verify:
                         if (((bool)e.Result))
-                            Utils.MessageHelper.Info(this, "Подпись верна!");
+                            MessageHelper.Info(this, "Подпись верна!");
                         else
-                            Utils.MessageHelper.Warning(this, "Подпись не верна!");
+                            MessageHelper.Warning(this, "Подпись не верна!");
                         break;
 
                     case BackgroundCryptoWorker.AsyncCryptoOpration.CheckSettigs:
                         if (!_options.CheckRequiredFieldsAreFilled())
                         {
-                            Utils.MessageHelper.Warning(this, "Чаcть обязательных настроек отсутствует. Проведите найстройку системы.");
+                            MessageHelper.Warning(this, "Чаcть обязательных настроек отсутствует. Проведите найстройку системы.");
                             OpenFormOptions();
                         }
                         break;
@@ -455,7 +461,7 @@ namespace SecureOne
             }
             catch (Exception ex)
             {
-                Utils.MessageHelper.Error(this, ex, "Ошибка при сохранении настроек приложения.");
+                MessageHelper.Error(this, ex, "Ошибка при сохранении настроек приложения.");
             }
         }
         /// <summary>

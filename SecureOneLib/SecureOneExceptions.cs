@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace SecureOneLib
 {
+    /// <summary>
+    /// Реализует базовое исключение
+    /// </summary>
     [Serializable]
     public class SecureOneBaseException : Exception
     {
@@ -17,7 +20,9 @@ namespace SecureOneLib
         public SecureOneBaseException(string message, Exception inner)
             : base(message, inner) { }
     }
-
+    /// <summary>
+    /// Реализует исключение - ошибка поиска сертификата
+    /// </summary>
     [Serializable]
     public class SOCertificateNotFoundException : SecureOneBaseException
     {
@@ -29,7 +34,9 @@ namespace SecureOneLib
         public SOCertificateNotFoundException(string message, Exception inner)
             : base(message, inner) { }
     }
-
+    /// <summary>
+    /// Реализует исключение - ошибка формата данных
+    /// </summary>
     [Serializable]
     public class SOInvalidFormatException : SecureOneBaseException
     {
@@ -41,19 +48,9 @@ namespace SecureOneLib
         public SOInvalidFormatException(string message, Exception inner)
             : base(message, inner) { }
     }
-
-    //[Serializable]
-    //public class SOInvalidSettingsException : SecureOneBaseException
-    //{
-    //    public SOInvalidSettingsException() { }
-
-    //    public SOInvalidSettingsException(string message)
-    //        : base(message) { }
-
-    //    public SOInvalidSettingsException(string message, Exception inner)
-    //        : base(message, inner) { }
-    //}
-
+    /// <summary>
+    /// Реализует исключение - ошибка криптографической операции
+    /// </summary>
     [Serializable]
     public class SOCryptographicException : SecureOneBaseException
     {
@@ -65,16 +62,4 @@ namespace SecureOneLib
         public SOCryptographicException(string message, Exception inner)
             : base(message, inner) { }
     }
-
-    //[Serializable]
-    //public class SOBadPackageTypeException : SecureOneBaseException
-    //{
-    //    public SOBadPackageTypeException() { }
-
-    //    public SOBadPackageTypeException(string message)
-    //        : base(message) { }
-
-    //    public SOBadPackageTypeException(string message, Exception inner)
-    //        : base(message, inner) { }
-    //}
 }
