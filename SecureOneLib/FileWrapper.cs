@@ -87,7 +87,7 @@ namespace SecureOneLib
         }
 
 
-        //#region Криптографические методы
+        #region Криптографические методы
 
         /// <summary>
         /// Подписывает файл, создавая присоединенную или отсоединенную подпись
@@ -151,9 +151,9 @@ namespace SecureOneLib
             return FilePathString + ".enc";
         }
 
-        //#endregion
+        #endregion
 
-        //#region Статические методы
+        #region Статические методы
         /// <summary>
         /// Записывае данные файл
         /// </summary>
@@ -171,7 +171,7 @@ namespace SecureOneLib
             return filename;
         }
 
-        //#endregion
+        #endregion
 
     }
 
@@ -239,7 +239,7 @@ namespace SecureOneLib
             return Path.Combine(path, native);
         }
 
-        //#region Криптографические методы
+        #region Криптографические методы
         /// <summary>
         /// Расшифровывает данные из крипто-контейнера
         /// </summary>
@@ -283,6 +283,6 @@ namespace SecureOneLib
             Scrambler.Verify(File.ReadAllBytes(FilePathString), File.OpenRead(datafilename), verifySignatureOnly);
         }
 
-        //#endregion
+        #endregion
     }
 }
