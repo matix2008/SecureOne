@@ -130,6 +130,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <None Include="Diagramms\BackgroundCryptoWorker.cd" />
+    <None Include="Diagramms\Settings.cd" />
     <None Include="Diagramms\Utils.cd" />
     <None Include="Diagramms\WinForms.cd" />
     <None Include="NLog.xsd">

@@ -451,7 +451,7 @@ namespace SecureOne
             }
             catch (CryptographicException ex)
             {
-                if (((uint)ex.HResult) == 0xC000A000)
+                if (((uint)ex.HResult) == 0xC000A000 || ((uint)ex.HResult == 0x80091007))
                 {
                     _report(SOState.CryptoState.Completed, $"Подпись файла {_inputFileWrapper} не прошла проверку");
                 }

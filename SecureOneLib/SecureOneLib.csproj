@@ -79,6 +79,7 @@
     <None Include="Diagramms\Exceptions.cd" />
     <None Include="Diagramms\FileWrappers.cd" />
     <None Include="Diagramms\Scrambler.cd" />
+    <None Include="Diagramms\State.cd" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup />

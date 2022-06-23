@@ -7,7 +7,7 @@ using System.Resources;
 // набора атрибутов. Измените значения этих атрибутов, чтобы изменить сведения,
 // связанные со сборкой.
 [assembly: AssemblyTitle("SecureOne")]
-[assembly: AssemblyDescription("Средство шифрования и электронной подписи.")]
+[assembly: AssemblyDescription("Программное средство шифрования и электрон-ной подписи для ос windows на платформе .net. Дипломный проект Батасова Г.Ю. - БГУИР ДП 1-40 01 01 002 ПЗ")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Батасов Герман")]
 [assembly: AssemblyProduct("SecureOne")]

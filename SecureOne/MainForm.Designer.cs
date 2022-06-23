@@ -60,7 +60,7 @@
             this.helpToolStripMenuItem});
             this.mainMenuStrip.Location = new System.Drawing.Point(0, 0);
             this.mainMenuStrip.Name = "mainMenuStrip";
-            this.mainMenuStrip.Size = new System.Drawing.Size(1214, 24);
+            this.mainMenuStrip.Size = new System.Drawing.Size(1384, 24);
             this.mainMenuStrip.TabIndex = 0;
             this.mainMenuStrip.Text = "menuStrip1";
             // 
@@ -212,7 +212,7 @@
             this.fileInfolistBox.Location = new System.Drawing.Point(972, 53);
             this.fileInfolistBox.Name = "fileInfolistBox";
             this.fileInfolistBox.SelectionMode = System.Windows.Forms.SelectionMode.None;
-            this.fileInfolistBox.Size = new System.Drawing.Size(230, 507);
+            this.fileInfolistBox.Size = new System.Drawing.Size(400, 507);
             this.fileInfolistBox.TabIndex = 4;
             this.fileInfolistBox.TabStop = false;
             this.fileInfolistBox.UseTabStops = false;
@@ -224,7 +224,7 @@
             this.toolStripProgressBar});
             this.statusStrip.Location = new System.Drawing.Point(0, 619);
             this.statusStrip.Name = "statusStrip";
-            this.statusStrip.Size = new System.Drawing.Size(1214, 22);
+            this.statusStrip.Size = new System.Drawing.Size(1384, 22);
             this.statusStrip.TabIndex = 5;
             this.statusStrip.Text = "statusStrip1";
             // 
@@ -246,7 +246,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1214, 641);
+            this.ClientSize = new System.Drawing.Size(1384, 641);
             this.Controls.Add(this.statusStrip);
             this.Controls.Add(this.fileInfolistBox);
             this.Controls.Add(this.label2);
@@ -258,7 +258,7 @@
             this.Controls.Add(this.plainDataListBox);
             this.Controls.Add(this.mainMenuStrip);
             this.MainMenuStrip = this.mainMenuStrip;
-            this.MinimumSize = new System.Drawing.Size(1230, 680);
+            this.MinimumSize = new System.Drawing.Size(1400, 680);
             this.Name = "MainForm";
             this.Text = "SecureOne";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
