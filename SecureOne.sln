@@ -9,6 +9,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GostCryptography", "GostCry
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecureOneLib", "SecureOneLib\SecureOneLib.csproj", "{EBEF2D59-349C-401A-8917-CC8FB7F25A6B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "UnitTests\UnitTests.csproj", "{49564D3F-237E-461D-876C-DD6D7AEBE067}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "SOSetup", "SOSetup\SOSetup.vdproj", "{1BAB9805-9D0F-4E3D-A73E-39B12F758B7C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +31,14 @@ Global
 		{EBEF2D59-349C-401A-8917-CC8FB7F25A6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EBEF2D59-349C-401A-8917-CC8FB7F25A6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EBEF2D59-349C-401A-8917-CC8FB7F25A6B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{49564D3F-237E-461D-876C-DD6D7AEBE067}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{49564D3F-237E-461D-876C-DD6D7AEBE067}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{49564D3F-237E-461D-876C-DD6D7AEBE067}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{49564D3F-237E-461D-876C-DD6D7AEBE067}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1BAB9805-9D0F-4E3D-A73E-39B12F758B7C}.Debug|Any CPU.ActiveCfg = Debug
+		{1BAB9805-9D0F-4E3D-A73E-39B12F758B7C}.Debug|Any CPU.Build.0 = Debug
+		{1BAB9805-9D0F-4E3D-A73E-39B12F758B7C}.Release|Any CPU.ActiveCfg = Release
+		{1BAB9805-9D0F-4E3D-A73E-39B12F758B7C}.Release|Any CPU.Build.0 = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

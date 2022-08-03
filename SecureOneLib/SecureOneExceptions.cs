@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SecureOneLib
 {
+    /// <summary>
+    /// Реализует базовое исключение
+    /// </summary>
     [Serializable]
     public class SecureOneBaseException : Exception
     {
@@ -17,7 +16,9 @@ namespace SecureOneLib
         public SecureOneBaseException(string message, Exception inner)
             : base(message, inner) { }
     }
-
+    /// <summary>
+    /// Реализует исключение - ошибка поиска сертификата
+    /// </summary>
     [Serializable]
     public class SOCertificateNotFoundException : SecureOneBaseException
     {
@@ -29,7 +30,9 @@ namespace SecureOneLib
         public SOCertificateNotFoundException(string message, Exception inner)
             : base(message, inner) { }
     }
-
+    /// <summary>
+    /// Реализует исключение - ошибка формата данных
+    /// </summary>
     [Serializable]
     public class SOInvalidFormatException : SecureOneBaseException
     {
@@ -39,6 +42,20 @@ namespace SecureOneLib
             : base(message) { }
 
         public SOInvalidFormatException(string message, Exception inner)
+            : base(message, inner) { }
+    }
+    /// <summary>
+    /// Реализует исключение - ошибка криптографической операции
+    /// </summary>
+    [Serializable]
+    public class SOCryptographicException : SecureOneBaseException
+    {
+        public SOCryptographicException() { }
+
+        public SOCryptographicException(string message)
+            : base(message) { }
+
+        public SOCryptographicException(string message, Exception inner)
             : base(message, inner) { }
     }
 }

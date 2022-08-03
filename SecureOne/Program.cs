@@ -1,11 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace SecureOne
 {
+    /// <summary>
+    /// Реализует основной цикл программы
+    /// </summary>
     static class Program
     {
         /// <summary>
@@ -14,13 +14,13 @@ namespace SecureOne
         [STAThread]
         static void Main()
         {
-            NLog.LogManager.GetCurrentClassLogger().Info("SecureOne is starting...");
+            NLog.LogManager.GetCurrentClassLogger().Info("Начало работы приложения");
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new MainForm());
 
-            NLog.LogManager.GetCurrentClassLogger().Info("SecureOne was finished.");
+            NLog.LogManager.GetCurrentClassLogger().Info("Заверешение работы приложения");
         }
     }
 }

@@ -29,41 +29,42 @@
         private void InitializeComponent()
         {
             this.label1 = new System.Windows.Forms.Label();
-            this.sendersCertificateTextBox = new System.Windows.Forms.TextBox();
+            this.ownerCertificateTextBox = new System.Windows.Forms.TextBox();
             this.addSenderCertificateButton = new System.Windows.Forms.Button();
             this.label2 = new System.Windows.Forms.Label();
             this.addRecipientCertificateButton = new System.Windows.Forms.Button();
             this.recipientsCertificatesListBox = new System.Windows.Forms.ListBox();
             this.OKButton = new System.Windows.Forms.Button();
             this.CnclButton = new System.Windows.Forms.Button();
-            this.alwaysUseAttachedSignCheckBox = new System.Windows.Forms.CheckBox();
-            this.alwaysUseGostCheckBox = new System.Windows.Forms.CheckBox();
+            this.alwaysUseDetachedSignCheckBox = new System.Windows.Forms.CheckBox();
+            this.folderBrowserDialog = new System.Windows.Forms.FolderBrowserDialog();
+            this.label3 = new System.Windows.Forms.Label();
+            this.workingFolderTextBox = new System.Windows.Forms.TextBox();
+            this.setupWorkingFolderButton = new System.Windows.Forms.Button();
             this.clearButton = new System.Windows.Forms.Button();
-            this.checkBox1 = new System.Windows.Forms.CheckBox();
-            this.checkBox2 = new System.Windows.Forms.CheckBox();
-            this.checkBox3 = new System.Windows.Forms.CheckBox();
+            this.alwaysUseCustomEncFrmtCheckBox = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(12, 9);
+            this.label1.Location = new System.Drawing.Point(15, 41);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(135, 13);
+            this.label1.Size = new System.Drawing.Size(125, 13);
             this.label1.TabIndex = 0;
-            this.label1.Text = "Сертификат отправителя";
+            this.label1.Text = "Сертификат владельца";
             // 
-            // sendersCertificateTextBox
+            // ownerCertificateTextBox
             // 
-            this.sendersCertificateTextBox.Location = new System.Drawing.Point(166, 9);
-            this.sendersCertificateTextBox.Name = "sendersCertificateTextBox";
-            this.sendersCertificateTextBox.ReadOnly = true;
-            this.sendersCertificateTextBox.Size = new System.Drawing.Size(484, 20);
-            this.sendersCertificateTextBox.TabIndex = 1;
+            this.ownerCertificateTextBox.Location = new System.Drawing.Point(169, 41);
+            this.ownerCertificateTextBox.Name = "ownerCertificateTextBox";
+            this.ownerCertificateTextBox.ReadOnly = true;
+            this.ownerCertificateTextBox.Size = new System.Drawing.Size(484, 20);
+            this.ownerCertificateTextBox.TabIndex = 1;
             // 
             // addSenderCertificateButton
             // 
-            this.addSenderCertificateButton.Location = new System.Drawing.Point(656, 7);
+            this.addSenderCertificateButton.Location = new System.Drawing.Point(659, 39);
             this.addSenderCertificateButton.Name = "addSenderCertificateButton";
             this.addSenderCertificateButton.Size = new System.Drawing.Size(40, 23);
             this.addSenderCertificateButton.TabIndex = 2;
@@ -74,7 +75,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(12, 35);
+            this.label2.Location = new System.Drawing.Point(15, 67);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(148, 13);
             this.label2.TabIndex = 0;
@@ -82,7 +83,7 @@
             // 
             // addRecipientCertificateButton
             // 
-            this.addRecipientCertificateButton.Location = new System.Drawing.Point(656, 159);
+            this.addRecipientCertificateButton.Location = new System.Drawing.Point(659, 191);
             this.addRecipientCertificateButton.Name = "addRecipientCertificateButton";
             this.addRecipientCertificateButton.Size = new System.Drawing.Size(40, 23);
             this.addRecipientCertificateButton.TabIndex = 2;
@@ -93,7 +94,7 @@
             // recipientsCertificatesListBox
             // 
             this.recipientsCertificatesListBox.FormattingEnabled = true;
-            this.recipientsCertificatesListBox.Location = new System.Drawing.Point(166, 35);
+            this.recipientsCertificatesListBox.Location = new System.Drawing.Point(169, 67);
             this.recipientsCertificatesListBox.Name = "recipientsCertificatesListBox";
             this.recipientsCertificatesListBox.Size = new System.Drawing.Size(484, 147);
             this.recipientsCertificatesListBox.TabIndex = 3;
@@ -102,7 +103,7 @@
             // 
             this.OKButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.OKButton.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.OKButton.Location = new System.Drawing.Point(624, 366);
+            this.OKButton.Location = new System.Drawing.Point(624, 288);
             this.OKButton.Name = "OKButton";
             this.OKButton.Size = new System.Drawing.Size(75, 23);
             this.OKButton.TabIndex = 4;
@@ -113,41 +114,60 @@
             // 
             this.CnclButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.CnclButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.CnclButton.Location = new System.Drawing.Point(12, 366);
+            this.CnclButton.Location = new System.Drawing.Point(12, 288);
             this.CnclButton.Name = "CnclButton";
             this.CnclButton.Size = new System.Drawing.Size(75, 23);
             this.CnclButton.TabIndex = 4;
             this.CnclButton.Text = "Отмена";
             this.CnclButton.UseVisualStyleBackColor = true;
             // 
-            // alwaysUseAttachedSignCheckBox
+            // alwaysUseDetachedSignCheckBox
             // 
-            this.alwaysUseAttachedSignCheckBox.AutoSize = true;
-            this.alwaysUseAttachedSignCheckBox.Checked = true;
-            this.alwaysUseAttachedSignCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.alwaysUseAttachedSignCheckBox.Location = new System.Drawing.Point(166, 192);
-            this.alwaysUseAttachedSignCheckBox.Name = "alwaysUseAttachedSignCheckBox";
-            this.alwaysUseAttachedSignCheckBox.Size = new System.Drawing.Size(354, 17);
-            this.alwaysUseAttachedSignCheckBox.TabIndex = 5;
-            this.alwaysUseAttachedSignCheckBox.Text = "Всегда использовать присоединенную подписи, если возможно";
-            this.alwaysUseAttachedSignCheckBox.UseVisualStyleBackColor = true;
+            this.alwaysUseDetachedSignCheckBox.AutoSize = true;
+            this.alwaysUseDetachedSignCheckBox.Location = new System.Drawing.Point(169, 224);
+            this.alwaysUseDetachedSignCheckBox.Name = "alwaysUseDetachedSignCheckBox";
+            this.alwaysUseDetachedSignCheckBox.Size = new System.Drawing.Size(262, 17);
+            this.alwaysUseDetachedSignCheckBox.TabIndex = 5;
+            this.alwaysUseDetachedSignCheckBox.Text = "Всегда использовать отсоединенную подпись";
+            this.alwaysUseDetachedSignCheckBox.UseVisualStyleBackColor = true;
             // 
-            // alwaysUseGostCheckBox
+            // folderBrowserDialog
             // 
-            this.alwaysUseGostCheckBox.AutoSize = true;
-            this.alwaysUseGostCheckBox.Checked = true;
-            this.alwaysUseGostCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.alwaysUseGostCheckBox.Location = new System.Drawing.Point(166, 215);
-            this.alwaysUseGostCheckBox.Name = "alwaysUseGostCheckBox";
-            this.alwaysUseGostCheckBox.Size = new System.Drawing.Size(252, 17);
-            this.alwaysUseGostCheckBox.TabIndex = 5;
-            this.alwaysUseGostCheckBox.Text = "Всегда использовать ГОСТ, если возможно";
-            this.alwaysUseGostCheckBox.UseVisualStyleBackColor = true;
+            this.folderBrowserDialog.Description = "Выбор рабочего каталога";
+            this.folderBrowserDialog.RootFolder = System.Environment.SpecialFolder.MyComputer;
+            this.folderBrowserDialog.ShowNewFolderButton = false;
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(15, 15);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(92, 13);
+            this.label3.TabIndex = 0;
+            this.label3.Text = "Рабочий каталог";
+            // 
+            // workingFolderTextBox
+            // 
+            this.workingFolderTextBox.Location = new System.Drawing.Point(169, 15);
+            this.workingFolderTextBox.Name = "workingFolderTextBox";
+            this.workingFolderTextBox.ReadOnly = true;
+            this.workingFolderTextBox.Size = new System.Drawing.Size(484, 20);
+            this.workingFolderTextBox.TabIndex = 1;
+            // 
+            // setupWorkingFolderButton
+            // 
+            this.setupWorkingFolderButton.Location = new System.Drawing.Point(659, 13);
+            this.setupWorkingFolderButton.Name = "setupWorkingFolderButton";
+            this.setupWorkingFolderButton.Size = new System.Drawing.Size(40, 23);
+            this.setupWorkingFolderButton.TabIndex = 2;
+            this.setupWorkingFolderButton.Text = "...";
+            this.setupWorkingFolderButton.UseVisualStyleBackColor = true;
+            this.setupWorkingFolderButton.Click += new System.EventHandler(this.setupWorkingFolderButton_Click);
             // 
             // clearButton
             // 
             this.clearButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.clearButton.Location = new System.Drawing.Point(543, 366);
+            this.clearButton.Location = new System.Drawing.Point(543, 288);
             this.clearButton.Name = "clearButton";
             this.clearButton.Size = new System.Drawing.Size(75, 23);
             this.clearButton.TabIndex = 6;
@@ -155,41 +175,16 @@
             this.clearButton.UseVisualStyleBackColor = true;
             this.clearButton.Click += new System.EventHandler(this.clearButton_Click);
             // 
-            // checkBox1
+            // alwaysUseCustomEncFrmtCheckBox
             // 
-            this.checkBox1.AutoSize = true;
-            this.checkBox1.Checked = true;
-            this.checkBox1.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.checkBox1.Location = new System.Drawing.Point(166, 250);
-            this.checkBox1.Name = "checkBox1";
-            this.checkBox1.Size = new System.Drawing.Size(322, 17);
-            this.checkBox1.TabIndex = 5;
-            this.checkBox1.Text = "Автоматически искать сертификат для проверки подписи";
-            this.checkBox1.UseVisualStyleBackColor = true;
-            // 
-            // checkBox2
-            // 
-            this.checkBox2.AutoSize = true;
-            this.checkBox2.Checked = true;
-            this.checkBox2.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.checkBox2.Location = new System.Drawing.Point(166, 273);
-            this.checkBox2.Name = "checkBox2";
-            this.checkBox2.Size = new System.Drawing.Size(280, 17);
-            this.checkBox2.TabIndex = 5;
-            this.checkBox2.Text = "Использовать только сертификаты контрагентов";
-            this.checkBox2.UseVisualStyleBackColor = true;
-            // 
-            // checkBox3
-            // 
-            this.checkBox3.AutoSize = true;
-            this.checkBox3.Checked = true;
-            this.checkBox3.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.checkBox3.Location = new System.Drawing.Point(166, 294);
-            this.checkBox3.Name = "checkBox3";
-            this.checkBox3.Size = new System.Drawing.Size(359, 17);
-            this.checkBox3.TabIndex = 5;
-            this.checkBox3.Text = "Очищать список незащищенных файлов при очередной загрузке";
-            this.checkBox3.UseVisualStyleBackColor = true;
+            this.alwaysUseCustomEncFrmtCheckBox.AutoSize = true;
+            this.alwaysUseCustomEncFrmtCheckBox.Location = new System.Drawing.Point(169, 247);
+            this.alwaysUseCustomEncFrmtCheckBox.Name = "alwaysUseCustomEncFrmtCheckBox";
+            this.alwaysUseCustomEncFrmtCheckBox.Size = new System.Drawing.Size(315, 17);
+            this.alwaysUseCustomEncFrmtCheckBox.TabIndex = 5;
+            this.alwaysUseCustomEncFrmtCheckBox.Text = "Всегда использовать собственный формат шифрования";
+            this.alwaysUseCustomEncFrmtCheckBox.UseVisualStyleBackColor = true;
+            this.alwaysUseCustomEncFrmtCheckBox.CheckedChanged += new System.EventHandler(this.options_CheckedChanged);
             // 
             // OptionsForm
             // 
@@ -197,20 +192,20 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.CnclButton;
-            this.ClientSize = new System.Drawing.Size(711, 401);
+            this.ClientSize = new System.Drawing.Size(711, 323);
             this.Controls.Add(this.clearButton);
-            this.Controls.Add(this.checkBox3);
-            this.Controls.Add(this.checkBox2);
-            this.Controls.Add(this.checkBox1);
-            this.Controls.Add(this.alwaysUseGostCheckBox);
-            this.Controls.Add(this.alwaysUseAttachedSignCheckBox);
+            this.Controls.Add(this.alwaysUseCustomEncFrmtCheckBox);
+            this.Controls.Add(this.alwaysUseDetachedSignCheckBox);
             this.Controls.Add(this.CnclButton);
             this.Controls.Add(this.OKButton);
             this.Controls.Add(this.recipientsCertificatesListBox);
             this.Controls.Add(this.addRecipientCertificateButton);
+            this.Controls.Add(this.setupWorkingFolderButton);
             this.Controls.Add(this.addSenderCertificateButton);
             this.Controls.Add(this.label2);
-            this.Controls.Add(this.sendersCertificateTextBox);
+            this.Controls.Add(this.workingFolderTextBox);
+            this.Controls.Add(this.label3);
+            this.Controls.Add(this.ownerCertificateTextBox);
             this.Controls.Add(this.label1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -226,18 +221,19 @@
         #endregion
 
         private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.TextBox sendersCertificateTextBox;
+        private System.Windows.Forms.TextBox ownerCertificateTextBox;
         private System.Windows.Forms.Button addSenderCertificateButton;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Button addRecipientCertificateButton;
         private System.Windows.Forms.ListBox recipientsCertificatesListBox;
         private System.Windows.Forms.Button OKButton;
         private System.Windows.Forms.Button CnclButton;
-        private System.Windows.Forms.CheckBox alwaysUseAttachedSignCheckBox;
-        private System.Windows.Forms.CheckBox alwaysUseGostCheckBox;
+        private System.Windows.Forms.CheckBox alwaysUseDetachedSignCheckBox;
+        private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.TextBox workingFolderTextBox;
+        private System.Windows.Forms.Button setupWorkingFolderButton;
         private System.Windows.Forms.Button clearButton;
-        private System.Windows.Forms.CheckBox checkBox1;
-        private System.Windows.Forms.CheckBox checkBox2;
-        private System.Windows.Forms.CheckBox checkBox3;
+        private System.Windows.Forms.CheckBox alwaysUseCustomEncFrmtCheckBox;
     }
 }

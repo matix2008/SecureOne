@@ -1,14 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace SecureOne.Utils
+namespace SecureOne
 {
+    /// <summary>
+    /// Реализует удобные функции для сообщений пользователю
+    /// </summary>
     public static class MessageHelper
     {
+        public static DialogResult QuestionYN(Form owner, string message, string caption = "")
+        {
+            return MessageBox.Show(owner, message, caption.Length == 0 ? owner.Text : caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+        }
+
         public static void Info(Form owner, string message, string caption = "")
         {
             MessageBox.Show(owner, message, caption.Length == 0 ? owner.Text : caption, MessageBoxButtons.OK, MessageBoxIcon.Information);

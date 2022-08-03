@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography.Pkcs;
+using System.Security.Cryptography.Xml;
 using System.Text.RegularExpressions;
 
-namespace SecureOneLib.Utilities
+namespace SecureOneLib
 {
     /// <summary>
     /// Реализует обертку над сертификатом X509Certificate2
@@ -26,7 +25,7 @@ namespace SecureOneLib.Utilities
         public CertificateWrapper(string subject)
         {
             X509Certificate2 cert = FindCertificateBySubject(subject);
-            Value = cert ?? throw new ArgumentException($"Can't find valid certificate with this subject: '{subject}'.");
+            Value = cert ?? throw new SOCertificateNotFoundException($"Can't find valid certificate with this subject: '{subject}'.");
         }
 
         /// <summary>
@@ -43,12 +42,21 @@ namespace SecureOneLib.Utilities
             return GetCertShortInfo(Value);
         }
 
+        /// <summary>
+        /// Создает сертификат и возвращает обертку на основе строки сериализации
+        /// </summary>
+        /// <param name="certstr"></param>
+        /// <returns>Обертка сертификата</returns>
         public static CertificateWrapper Parse(string certstr)
         {
+            if (certstr.Length == 0)
+                return null;
+
             Regex rx = new Regex("CN:.+SN", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnoreCase);
             MatchCollection matches = rx.Matches(certstr);
             if (matches.Count != 1)
-                throw new ArgumentException("Invalid certificate string.");
+                throw new SOCertificateNotFoundException("Invalid certificate string.");
+
             string match = matches[0].Value;
             return new CertificateWrapper(match.Substring(4, match.Length - 7));
         }
@@ -85,38 +93,65 @@ namespace SecureOneLib.Utilities
             store.Close();
             return null;
         }
+
         /// <summary>
-        /// Ищет сертификат по подстроке в названии субъекта
+        /// Ищет сертификат в заданном хранилище по идентификатору субъекта
         /// </summary>
-        /// <param name="sn">Серийный номер</param>
+        /// <param name="storeLocation">Хранилище</param>
+        /// <param name="subjIdentifier">Идентификатор субъекта</param>
         /// <returns>Сертификат или null</returns>
-        public static X509Certificate2 FindCertificateBySN(string sn)
+        public static X509Certificate2 FindCertificateBySubjectIdentifier(StoreLocation storeLocation, SubjectIdentifier subjIdentifier)
         {
-            X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
-            store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
+            if (subjIdentifier == null)
+                throw new ArgumentNullException("subjIdentifier");
 
-            X509Certificate2Collection fcollection = (X509Certificate2Collection)store.Certificates.
-                Find(X509FindType.FindByTimeValid, DateTime.Now, false);
+            X509Store store = new X509Store(storeLocation);
+            store.Open(OpenFlags.ReadOnly);
+            X509Certificate2Collection certCollection = store.Certificates;
+            X509Certificate2 x509 = null;
 
-            foreach (var cert in fcollection)
-                if (cert.SerialNumber.Equals(sn))
-                    return cert;
+            string SerialNumber = String.Empty;
+            string IssuerName = String.Empty;
+
+            X509IssuerSerial issuerSerial;
+
+            if (subjIdentifier.Type == SubjectIdentifierType.IssuerAndSerialNumber)
+            {
+                issuerSerial = (X509IssuerSerial)subjIdentifier.Value;
+            }
+
+            foreach (X509Certificate2 c in certCollection)
+            {
+                if (c.SerialNumber == issuerSerial.SerialNumber && c.Issuer == issuerSerial.IssuerName)
+                {
+                    x509 = c;
+                    break;
+                }
+            }
 
             store.Close();
-            return null;
+            return x509;
         }
     }
 
     /// <summary>
-    /// Обертка над коллекцией сертификатов
+    /// Реализует обертку над коллекцией сертификатов X509Certificate2Collection
     /// </summary>
     public class CertificateCollectionWrapper
     {
+        /// <summary>
+        /// Конструирует объект обертку
+        /// </summary>
+        /// <param name="coll">Коллекция сертификатов</param>
         public CertificateCollectionWrapper(X509Certificate2Collection coll)
         {
             Value = coll ?? throw new ArgumentNullException("cert");
+            Count = Value.Count;
         }
-
+        /// <summary>
+        /// Конструирует объект обертку
+        /// </summary>
+        /// <param name="arr">Массив сертификатов</param>
         public CertificateCollectionWrapper(CertificateWrapper[] arr)
         {
             if (arr == null)
@@ -126,8 +161,13 @@ namespace SecureOneLib.Utilities
 
             foreach (var cw in arr)
                 Value.Add(cw.Value);
-        }
 
+            Count = Value.Count;
+        }
+        /// <summary>
+        /// Конструирует объект обертку
+        /// </summary>
+        /// <param name="collstr">Строка сериализации</param>
         public CertificateCollectionWrapper(string collstr)
         {
             List<CertificateWrapper> cwl = new List<CertificateWrapper>();
@@ -137,6 +177,7 @@ namespace SecureOneLib.Utilities
                 cwl.Add(CertificateWrapper.Parse(s));
 
             Value = new X509Certificate2Collection(cwl.Select(x => x.Value).ToArray());
+            Count = Value.Count;
         }
 
         /// <summary>
@@ -145,9 +186,14 @@ namespace SecureOneLib.Utilities
         public X509Certificate2Collection Value { get; }
 
         /// <summary>
+        /// Коллекция сертификатов
+        /// </summary>
+        public int Count { get; }
+
+        /// <summary>
         /// Возвращает строку представляющую коллекцию
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Строка сериализации</returns>
         public override string ToString()
         {
             string result = String.Empty;

@@ -1,99 +1,113 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using SecureOneLib;
-using SecureOneLib.Utilities;
 
 namespace SecureOne
 {
     /// <summary>
-    /// Набор установок приложения
+    /// Реализует набор системных настроек приложения
     /// </summary>
-    public class Settings : IDisposable
+    public class Settings
     {
-        private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
+        private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();    // Объект логирования
 
+        /// <summary>
+        /// Конструирует объект настроек
+        /// </summary>
         public Settings()
         {
+            // Загружаем данные найтроек из файла
             Load();
         }
 
-        public CertificateWrapper SenderCertificate { get; set; }
+        /// <summary>
+        /// Рабочий каталог
+        /// </summary>
+        public string OwnerWorkingFolder { get; set; }
+        /// <summary>
+        /// Сертификатр владельца
+        /// </summary>
+        public CertificateWrapper OwnerCertificate { get; set; }
+        /// <summary>
+        /// Коллекция сертификатов контрагентов
+        /// </summary>
         public CertificateCollectionWrapper RecipientsCertificatesCollection { get; set; }
-        public bool AlwaysUseAttachedSign { get; set; }
-        public bool AlwaysUseGost { get; set; }
+        /// <summary>
+        /// Флаг - всегда использовать отсоединенную подпись
+        /// </summary>
+        public bool AllwaysUseDetachedSign { get; set; }
+        /// <summary>
+        /// Флаг - всегда использовать собственный формат шифрования
+        /// </summary>
+        public bool AllwaysUseCustomEncFrmt { get; set; }
 
-        public bool CheckRequiredFieldsAreFilled()
-        {
-            return (SenderCertificate != null);
-        }
-
-        public void Clear()
-        {
-            SenderCertificate = null;
-            RecipientsCertificatesCollection = null;
-            AlwaysUseAttachedSign = true;
-            AlwaysUseGost = true;
-        }
-
+        /// <summary>
+        /// Сбрасывает настройки
+        /// </summary>
         public void Reset()
         {
             Properties.Settings.Default.Reset();
-            logger.Info("Aplication settings was reseted.");
+            logger.Info("Настройки приложения перегружены");
+
             Load();
         }
 
+        /// <summary>
+        /// Загружает настройки
+        /// </summary>
         public void Load()
         {
-            SenderCertificate = null;
-            RecipientsCertificatesCollection = null;
-
             try
             {
-                AlwaysUseAttachedSign = Properties.Settings.Default.AlwaysUseAttachedSign;
-                AlwaysUseGost = Properties.Settings.Default.AlwaysUseGost;
+                logger.Info("Начинаем загружать системные настройки");
 
-                if (Properties.Settings.Default.SenderCertificate.Length != 0)
-                    SenderCertificate = CertificateWrapper.Parse(Properties.Settings.Default.SenderCertificate);
+                OwnerWorkingFolder = Properties.Settings.Default.OwnerWorkingFolder;
+                AllwaysUseDetachedSign = Properties.Settings.Default.AllwaysUseDetachedSign;
+                AllwaysUseCustomEncFrmt = Properties.Settings.Default.AllwaysUseCustomEncFrmt;
+                OwnerCertificate = CertificateWrapper.Parse(Properties.Settings.Default.OwnerCertificate);
+                RecipientsCertificatesCollection = new CertificateCollectionWrapper(Properties.Settings.Default.RecipientsCertificatesCollection);
 
-                if (Properties.Settings.Default.RecipientsCertificatesCollection.Length != 0)
-                    RecipientsCertificatesCollection = new CertificateCollectionWrapper(Properties.Settings.Default.RecipientsCertificatesCollection);
-
-                logger.Info("Aplication settings successfully loaded.");
+                logger.Info("Системные настройки успешно загружены");
             }
             catch(Exception ex)
             {
-                logger.Error(ex, "Exeption during loading application settings.");
-                throw ex;
+                logger.Error(ex, "Ошибка во время загрузки системных настроек");
+                throw;
             }
         }
 
+        /// <summary>
+        /// Сохраняет настройки
+        /// </summary>
         public void Save()
         {
             try
             {
-                Properties.Settings.Default.AlwaysUseAttachedSign = AlwaysUseAttachedSign;
-                Properties.Settings.Default.AlwaysUseGost = AlwaysUseGost;
-                Properties.Settings.Default.SenderCertificate = SenderCertificate?.ToString() ?? string.Empty;
+                Properties.Settings.Default.OwnerWorkingFolder = OwnerWorkingFolder;
+                Properties.Settings.Default.AllwaysUseDetachedSign = AllwaysUseDetachedSign;
+                Properties.Settings.Default.AllwaysUseCustomEncFrmt = AllwaysUseCustomEncFrmt;
+                Properties.Settings.Default.OwnerCertificate = OwnerCertificate?.ToString() ?? string.Empty;
                 Properties.Settings.Default.RecipientsCertificatesCollection = RecipientsCertificatesCollection?.ToString() ?? string.Empty;
-                Properties.Settings.Default.AllRequiredFieldsAreFilled = CheckRequiredFieldsAreFilled();
 
-                logger.Info("Aplication settings successfully saved.");
+                logger.Info("Системные настройки успешно сохранены");
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Exeption during saving application settings.");
-                throw ex;
+                logger.Error(ex, "Ошибка во время сохранения системных настроек");
+                throw;
             }
 
             Properties.Settings.Default.Save();
         }
 
-        public void Dispose()
+        /// <summary>
+        /// Проверяет, что установлены обязательные параметры
+        /// </summary>
+        /// <returns></returns>
+        public bool CheckRequiredFieldsAreFilled()
         {
-            Load();
+            return (OwnerCertificate != null &&
+                    OwnerWorkingFolder.Length > 0);
         }
+
     }
 }
